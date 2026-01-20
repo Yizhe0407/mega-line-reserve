@@ -9,6 +9,8 @@
     "strict": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "resolveJsonModule": true
-  }
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  },
+  "include": ["src/**/*"]
 }

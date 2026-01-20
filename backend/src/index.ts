@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -31,9 +30,13 @@ app.get('/api', (req, res) => {
     res.json({ message: 'Mega Line Reserve API' });
 });
 
-// TODO: Add your routes here
-// import routes from './routes';
-// app.use('/api', routes);
+// Auth routes
+import authRoutes from './routes/auth';
+app.use('/api/auth', authRoutes);
+
+// User routes
+import userRoutes from './routes/user';
+app.use('/api/user', userRoutes);
 
 // Start server
 app.listen(PORT, () => {
