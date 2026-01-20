@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum ReserveStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  lineId     String   @unique
+  name       String?
+  pictureUrl String?
+  phone      String   @unique
+  license    String?
+  role       UserRole @default(CUSTOMER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves Reserve[]
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  price       Decimal? @db.Decimal(10, 2)
+  duration    Int? // 分鐘
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves ServicesOnReserves[]
+}
+
+model Reserve {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  reservationTime DateTime
+  license         String
+  status          ReserveStatus @default(PENDING)
+
+  userMemo  String?
+  adminMemo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User                 @relation(fields: [userId], references: [id])
+  services ServicesOnReserves[]
+
+  @@index([reservationTime])
+  @@index([status])
+}
+
+model ServicesOnReserves {
+  reserveId Int
+  serviceId Int
+  reserve   Reserve @relation(fields: [reserveId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  assignedAt DateTime @default(now())
+
+  @@id([reserveId, serviceId])
+}
