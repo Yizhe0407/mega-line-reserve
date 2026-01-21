@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useStepStore } from "@/store/step-store";
+import { useStepUserData } from "@/hooks/useStepUserData";
 
 export default function VerifyLIFF() {
   const router = useRouter();
-  const { fetchUserData } = useStepStore();
+  const { fetchUserData } = useStepUserData();
   const liffInitialized = useRef(false);
 
   useEffect(() => {

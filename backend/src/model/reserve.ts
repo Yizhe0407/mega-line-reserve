@@ -1,4 +1,4 @@
-import prisma from "../config/database";
+import { prisma } from "../config/database";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
 
 // 取得所有預約 (管理端)

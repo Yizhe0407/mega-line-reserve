@@ -1,18 +1,21 @@
 import liff from "@line/liff";
 import { useStepStore } from "@/store/step-store";
 import { useState, useEffect } from "react";
+import { service as serviceApi } from "@/lib/api";
+import type { Service } from "@/types/service";
+
+type LiffMessage = Parameters<typeof liff.sendMessages>[0][number];
 
 export function useLiffMessage() {
     const step1Data = useStepStore((state) => state.step1Data);
     const step2Data = useStepStore((state) => state.step2Data);
     const step3Data = useStepStore((state) => state.step3Data);
-    const [services, setServices] = useState([]);
+    const [services, setServices] = useState<Service[]>([]);
 
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                const response = await fetch('/api/service');
-                const data = await response.json();
+                const data = await serviceApi.getAllServices();
                 setServices(data);
             } catch (error) {
                 console.error('Error fetching services:', error);
@@ -25,12 +28,12 @@ export function useLiffMessage() {
     // 處理服務項目顯示
     const getServiceList = () => {
         if (services.length === 0) return "";
-        const otherService = services.find(s => s.name === '其他');
-        const list = (step2Data.selectServe || []).map(id => {
+        const otherService = services.find((s) => s.name === '其他');
+        const list = (step2Data.selectServe || []).map((id) => {
             if (id === otherService?.id && step2Data.otherService) {
                 return `其他(${step2Data.otherService})`;
             }
-            const service = services.find(s => s.id === id);
+            const service = services.find((s) => s.id === id);
             return service ? service.name : "";
         });
         return list.join('、');
@@ -38,7 +41,7 @@ export function useLiffMessage() {
 
     const sendLineMessage = async () => {
         try {
-            const flexMessage = {
+            const flexMessage: LiffMessage = {
                 type: "flex",
                 altText: "預約成功通知",
                 contents: {
@@ -121,7 +124,7 @@ export function useLiffMessage() {
                                             },
                                             {
                                                 type: "text",
-                                                text: step1Data.name,
+                                                text: step1Data.name ?? "",
                                                 size: "md",
                                                 color: "#111111",
                                                 align: "end"
@@ -140,7 +143,7 @@ export function useLiffMessage() {
                                             },
                                             {
                                                 type: "text",
-                                                text: step1Data.license,
+                                                text: step1Data.license ?? "",
                                                 size: "md",
                                                 color: "#111111",
                                                 align: "end"
@@ -204,11 +207,8 @@ export function useLiffMessage() {
                 }
             };
 
-            const result = await liff.sendMessages([flexMessage]);
-            if (result) {
-                return true;
-            }
-            return false;
+            await liff.sendMessages([flexMessage]);
+            return true;
         } catch (error) {
             console.error('LINE 訊息發送失敗:', error);
             return false;

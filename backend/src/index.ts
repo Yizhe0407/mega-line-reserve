@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/user';
+import { router as serviceRoutes } from './routes/service';
+import { router as reserveRoutes } from './routes/reserve';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -31,23 +36,18 @@ app.get('/api', (req, res) => {
 });
 
 // Auth routes
-import authRoutes from './routes/auth';
 app.use('/api/auth', authRoutes);
 
 // User routes
-import userRoutes from './routes/user';
 app.use('/api/user', userRoutes);
 
 // Service routes
-import { router as serviceRoutes } from './routes/service';
 app.use('/api/service', serviceRoutes);
 
 // Reserve routes
-import { router as reserveRoutes } from './routes/reserve';
 app.use('/api/reserve', reserveRoutes);
 
 // Error handler (must be last)
-import { errorHandler } from './middleware/errorHandler';
 app.use(errorHandler);
 
 // Start server

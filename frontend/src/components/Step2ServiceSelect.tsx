@@ -4,20 +4,21 @@ import ProgressBar from "./ProgressBar";
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
+import { useStepServices } from "@/hooks/useStepServices"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import StepButtonGroup from "./StepButtonGroup";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import type { Service } from "@/types/service"
 
 
 export default function Step2ServiceSelect() {
   const [isLoading, setIsLoading] = useState(true)
   const step2Data = useStepStore((state) => state.step2Data)
   const setStep2Data = useStepStore((state) => state.setStep2Data)
-  const services = useStepStore((state) => state.services)
-  const fetchServices = useStepStore((state) => state.fetchServices)
+  const { services, fetchServices } = useStepServices()
 
   useEffect(() => {
     const loadServices = async () => {
@@ -28,14 +29,14 @@ export default function Step2ServiceSelect() {
     loadServices()
   }, [fetchServices])
 
-  const toggleService = (serviceId) => {
+  const toggleService = (serviceId: number) => {
     const current = step2Data?.selectServe || []
     const newSelected = current.includes(serviceId)
-      ? current.filter(id => id !== serviceId)
+      ? current.filter((id: number) => id !== serviceId)
       : [...current, serviceId]
 
-    const otherServiceId = services.find(s => s.name === '其他')?.id;
-    const isOtherSelected = newSelected.includes(otherServiceId);
+    const otherServiceId = services.find((s: Service) => s.name === '其他')?.id;
+    const isOtherSelected = otherServiceId ? newSelected.includes(otherServiceId) : false;
 
     setStep2Data({
       ...step2Data,
@@ -44,7 +45,7 @@ export default function Step2ServiceSelect() {
     })
   }
 
-  const otherServiceId = services.find(s => s.name === '其他')?.id;
+  const otherServiceId = services.find((s: Service) => s.name === '其他')?.id;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -66,7 +67,7 @@ export default function Step2ServiceSelect() {
                     <Skeleton className="h-12 w-full" />
                   </>
                 ) : (
-                  services.map((service) => (
+                  services.map((service: Service) => (
                     <Button
                       key={service.id}
                       variant={step2Data?.selectServe?.includes(service.id) ? "default" : "outline"}
@@ -80,7 +81,12 @@ export default function Step2ServiceSelect() {
               </div>
             </div>
 
-            <div className={cn("space-y-2", !step2Data?.selectServe?.includes(otherServiceId) && "hidden")}>
+            <div
+              className={cn(
+                "space-y-2",
+                !(otherServiceId ? step2Data?.selectServe?.includes(otherServiceId) : false) && "hidden"
+              )}
+            >
               <Textarea
                 id="other-service"
                 placeholder="請詳細說明您的服務需求..."

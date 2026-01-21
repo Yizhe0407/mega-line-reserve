@@ -74,17 +74,14 @@ export default function RecordPage() {
 
   useEffect(() => {
     const fetchReservations = async () => {
-      if (!userId) {
-        setIsLoading(false);
-        setError('無法獲取用戶資訊，請稍後再試。');
-        return;
-      }
-
       try {
-        const idToken = liff.getIDToken();
-        const response = await fetch(`/api/reserve/${userId}`, {
+        const accessToken = liff.getAccessToken();
+        if (!accessToken) {
+          throw new Error('無法取得 access token。');
+        }
+        const response = await fetch(`/api/reserve`, {
           headers: {
-            'Authorization': `Bearer ${idToken}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
         });
 
@@ -112,11 +109,14 @@ export default function RecordPage() {
     }
 
     try {
-      const idToken = liff.getIDToken();
+      const accessToken = liff.getAccessToken();
+      if (!accessToken) {
+        throw new Error('無法取得 access token。');
+      }
       const response = await fetch(`/api/reserve/${reserveId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${idToken}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 

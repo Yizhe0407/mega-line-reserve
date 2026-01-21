@@ -49,7 +49,7 @@ services:
     container_name: mega-line-reserve-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-mega_user}:${MYSQL_PASSWORD:-mega_password}@mysql:3306/${MYSQL_DATABASE:-mega_line_reserve}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       NODE_ENV: production
       PORT: 3001
     ports:

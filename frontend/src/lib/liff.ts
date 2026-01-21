@@ -2,22 +2,40 @@ import liff from '@line/liff';
 
 export const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID || '';
 
+let initPromise: Promise<void> | null = null;
+
 /**
  * 初始化 LIFF SDK
  */
 export const initLiff = async (): Promise<void> => {
+    return ensureLiffInit();
+};
+
+export const ensureLiffInit = async (options?: { withLoginOnExternalBrowser?: boolean }): Promise<void> => {
     if (!LIFF_ID) {
         console.error('LIFF ID is not set. Please set NEXT_PUBLIC_LIFF_ID environment variable.');
         return;
     }
 
-    try {
-        await liff.init({ liffId: LIFF_ID });
-        console.log('LIFF initialized successfully');
-    } catch (error) {
-        console.error('LIFF initialization failed:', error);
-        throw error;
+    if (!initPromise) {
+        initPromise = liff
+            .init({
+                liffId: LIFF_ID,
+                ...(options?.withLoginOnExternalBrowser !== undefined
+                    ? { withLoginOnExternalBrowser: options.withLoginOnExternalBrowser }
+                    : {}),
+            })
+            .then(() => {
+                console.log('LIFF initialized successfully');
+            })
+            .catch((error) => {
+                initPromise = null;
+                console.error('LIFF initialization failed:', error);
+                throw error;
+            });
     }
+
+    return initPromise;
 };
 
 /**

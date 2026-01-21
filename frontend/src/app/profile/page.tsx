@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit, Save, X, Loader2, Info, ArrowLeft } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import liff from "@line/liff";
+import { auth, user as userApi, FetchError } from "@/lib/api";
 
 function ProfilePageContent() {
   const router = useRouter();
@@ -26,7 +27,8 @@ function ProfilePageContent() {
   const [isEditing, setIsEditing] = useState(isNewUser);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { userId } = useStepStore();
+  const { userId, lineId } = useStepStore();
+  const setUserId = useStepStore((state) => state.setUserId);
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
   const [localData, setLocalData] = useState(step1Data);
@@ -78,38 +80,52 @@ function ProfilePageContent() {
     if (!validate()) return;
     setIsSaving(true);
     try {
-      const idToken = liff.getIDToken();
-      let response;
+      const accessToken = liff.getAccessToken();
+      if (!accessToken) {
+        throw new Error("無法取得 access token");
+      }
+
+      let updatedProfile;
       if (isNewUser) {
-        response = await fetch(`/api/users`, {
-          method: "POST",
-          body: JSON.stringify({
-            ...localData,
-            lineId: userId,
-            pictureUrl: step1Data.pictureUrl,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`,
+        const created = await auth.login(
+          {
+            phone: localData.phone,
+            license: localData.license,
           },
-        });
+          accessToken
+        );
+
+        const createdUser = created.user;
+        updatedProfile = await userApi.updateUser(
+          createdUser.id,
+          {
+            name: localData.name || createdUser.name,
+            phone: localData.phone,
+            license: localData.license,
+          },
+          accessToken
+        );
+
+        setUserId(updatedProfile.id);
       } else {
-        response = await fetch(`/api/users/${userId}`, {
-          method: "PATCH",
-          body: JSON.stringify(localData),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`,
+        let targetUserId = userId;
+        if (!targetUserId) {
+          const resolvedLineId = lineId || (await liff.getProfile()).userId;
+          const currentUser = await userApi.getUserByLineId(resolvedLineId, accessToken);
+          targetUserId = currentUser.id;
+          setUserId(targetUserId);
+        }
+
+        updatedProfile = await userApi.updateUser(
+          targetUserId,
+          {
+            name: localData.name,
+            phone: localData.phone,
+            license: localData.license,
           },
-        });
+          accessToken
+        );
       }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save profile');
-      }
-
-      const updatedProfile = await response.json();
       setStep1Data({
         name: updatedProfile.name,
         phone: updatedProfile.phone,
@@ -121,7 +137,13 @@ function ProfilePageContent() {
       router.push("/profile");
     } catch (error) {
       console.error("An error occurred while saving the profile:", error);
-      setErrors({ form: error.message });
+      if (error instanceof FetchError) {
+        setErrors({ form: error.message });
+      } else if (error instanceof Error) {
+        setErrors({ form: error.message });
+      } else {
+        setErrors({ form: "資料儲存失敗" });
+      }
     } finally {
       setIsSaving(false);
     }

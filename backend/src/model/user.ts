@@ -1,4 +1,4 @@
-import prisma from "../config/database";
+import { prisma } from "../config/database";
 import { UserProfile, CreateUserDTO } from "../types/user";
 
 // 取得單一使用者 (根據 Line ID)

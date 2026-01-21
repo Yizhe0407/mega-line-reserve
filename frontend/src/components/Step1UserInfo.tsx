@@ -3,6 +3,7 @@ import ProgressBar from "./ProgressBar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
+import { useStepUserData } from "@/hooks/useStepUserData";
 import StepButtonGroup from "./StepButtonGroup";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ export default function Step1UserInfo() {
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
   const isLoading = useStepStore((state) => state.isLoading);
-  const fetchUserData = useStepStore((state) => state.fetchUserData);
+  const { fetchUserData } = useStepUserData();
 
   return (
     <div className="min-h-screen bg-background pb-24">

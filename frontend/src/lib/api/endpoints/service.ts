@@ -5,33 +5,33 @@ import { Service, CreateServiceDTO, UpdateServiceDTO } from '@/types/service';
  * 取得所有服務列表
  */
 export const getAllServices = (): Promise<Service[]> => {
-  return get<Service[]>('/api/services');
+  return get<Service[]>('/api/service');
 };
 
 /**
  * 根據 ID 取得單一服務
  */
 export const getServiceById = (id: number): Promise<Service> => {
-  return get<Service>(`/api/services/${id}`);
+  return get<Service>(`/api/service/${id}`);
 };
 
 /**
  * 建立服務 (僅限管理員)
  */
 export const createService = (data: CreateServiceDTO, token: string): Promise<Service> => {
-  return post<Service>('/api/services', data, token);
+  return post<Service>('/api/service', data, token);
 };
 
 /**
  * 更新服務 (僅限管理員)
  */
 export const updateService = (id: number, data: UpdateServiceDTO, token: string): Promise<Service> => {
-  return put<Service>(`/api/services/${id}`, data, token);
+  return put<Service>(`/api/service/${id}`, data, token);
 };
 
 /**
  * 刪除服務 (僅限管理員)
  */
 export const deleteService = (id: number, token: string): Promise<{ message: string }> => {
-  return del<{ message: string }>(`/api/services/${id}`, token);
+  return del<{ message: string }>(`/api/service/${id}`, token);
 };

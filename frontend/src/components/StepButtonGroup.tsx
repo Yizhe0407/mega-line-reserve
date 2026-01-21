@@ -37,7 +37,6 @@ export default function StepButtonGroup({
     const serviceIds = step2Data.selectServe;
 
     const reserveData = {
-      lineId: useStepStore.getState().userId,
       serviceIds,
       reservationTime: reservationTime.toISOString(),
       otherService: step2Data.isOtherServiceSelected ? step2Data.otherService : null,
@@ -46,12 +45,15 @@ export default function StepButtonGroup({
     console.log(reservationTime)
     console.log(reserveData)
     try {
-      const idToken = liff.getIDToken();
+      const accessToken = liff.getAccessToken();
+      if (!accessToken) {
+        throw new Error("無法取得 access token");
+      }
       await fetch("/api/reserve", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
+          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify(reserveData),
       });

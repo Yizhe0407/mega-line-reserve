@@ -25,6 +25,11 @@ cp .env.example .env
 ### 開發環境（支援熱重載）
 
 ```bash
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml build --no-cache
+docker compose -f docker-compose.dev.yml up -d
+
+
 # 啟動開發環境
 docker compose -f docker-compose.dev.yml up -d
 
