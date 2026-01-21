@@ -2,7 +2,9 @@ import * as userModel from "../model/user";
 import { UserProfile, CreateUserDTO } from "../types/user";
 import { ValidationError, NotFoundError } from "../types/errors";
 
-export const getUserByLineId = async (lineId: string) => {
+export const getUserByLineId = async (lineIdParam: string | string[]) => {
+    const lineId = Array.isArray(lineIdParam) ? lineIdParam[0] : lineIdParam;
+
     // 業務邏輯檢查：驗證 lineId 不為空
     if (!lineId || lineId.trim() === "") {
         throw new ValidationError("Line ID 不能為空");
@@ -11,9 +13,11 @@ export const getUserByLineId = async (lineId: string) => {
     return await userModel.findUserByLineId(lineId);
 };
 
-export const getUserById = async (id: number) => {
+export const getUserById = async (idParam: string | string[]) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+    
     // 業務邏輯檢查：驗證 ID 為有效數字
-    if (!id || id <= 0) {
+    if (isNaN(id) || id <= 0) {
         throw new ValidationError("使用者 ID 必須為正整數");
     }
 
@@ -62,9 +66,11 @@ export const createUser = async (userData: CreateUserDTO) => {
     return await userModel.createUser(userData);
 };
 
-export const updateUser = async (id: number, data: Partial<UserProfile>, currentUserId: number) => {
+export const updateUser = async (idParam: string | string[], data: Partial<UserProfile>, currentUserId: number) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+
     // 業務邏輯檢查：驗證 ID 為有效數字
-    if (!id || id <= 0) {
+    if (isNaN(id) || id <= 0) {
         throw new ValidationError("使用者 ID 必須為正整數");
     }
 
@@ -111,9 +117,11 @@ export const updateUser = async (id: number, data: Partial<UserProfile>, current
     return await userModel.updateUser(id, data);
 };
 
-export const deleteUser = async (id: number) => {
+export const deleteUser = async (idParam: string | string[]) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+
     // 業務邏輯檢查：驗證 ID 為有效數字
-    if (!id || id <= 0) {
+    if (isNaN(id) || id <= 0) {
         throw new ValidationError("使用者 ID 必須為正整數");
     }
 

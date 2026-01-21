@@ -38,6 +38,18 @@ app.use('/api/auth', authRoutes);
 import userRoutes from './routes/user';
 app.use('/api/user', userRoutes);
 
+// Service routes
+import { router as serviceRoutes } from './routes/service';
+app.use('/api/service', serviceRoutes);
+
+// Reserve routes
+import { router as reserveRoutes } from './routes/reserve';
+app.use('/api/reserve', reserveRoutes);
+
+// Error handler (must be last)
+import { errorHandler } from './middleware/errorHandler';
+app.use(errorHandler);
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
