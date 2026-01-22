@@ -11,6 +11,15 @@ export const getServiceById = (id: number) => {
     });
 };
 
+export const getActiveServicesByIds = (ids: number[]) => {
+    return prisma.service.findMany({
+        where: {
+            id: { in: ids },
+            isActive: true
+        }
+    });
+};
+
 export const createService = (serviceData: Service) => {
     return prisma.service.create({
         data: serviceData,

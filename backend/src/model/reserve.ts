@@ -74,7 +74,7 @@ export const getReserveById = (id: number) => {
 
 // 建立預約
 export const createReserve = (userId: number, data: CreateReserveDTO) => {
-    const { timeSlotId, license, serviceIds, userMemo, date } = data;
+    const { timeSlotId, license, serviceIds, userMemo, date, isPickup } = data;
     
     return prisma.reserve.create({
         data: {
@@ -82,6 +82,7 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
             timeSlotId,
             date: new Date(date),
             license,
+            isPickup: isPickup || false,
             userMemo,
             services: {
                 create: serviceIds.map(serviceId => ({
@@ -104,7 +105,7 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
 
 // 更新預約 (狀態或管理端備註)
 export const updateReserve = (id: number, data: UpdateReserveDTO) => {
-    const { status, adminMemo, license, timeSlotId, date, userMemo, serviceIds } = data;
+    const { status, adminMemo, license, timeSlotId, date, userMemo, serviceIds, isPickup } = data;
     
     // 準備更新資料物件
     const updateData: any = {
@@ -117,6 +118,10 @@ export const updateReserve = (id: number, data: UpdateReserveDTO) => {
 
     if (date) {
         updateData.date = new Date(date);
+    }
+    
+    if (isPickup !== undefined) {
+        updateData.isPickup = isPickup;
     }
 
     // 如果有傳入 serviceIds，則先刪除舊關聯再建立新關聯

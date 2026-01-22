@@ -37,6 +37,7 @@ export default function StepButtonGroup({
       license: step1Data.license!,
       userMemo: step2Data.isOtherServiceSelected ? step2Data.otherService : undefined,
       date: step3Data.date!,
+      isPickup: step2Data.extra,
     };
     try {
       const idToken = liff.getIDToken();

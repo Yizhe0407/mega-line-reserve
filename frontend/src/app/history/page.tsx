@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock, Pencil } from 'lucide-react';
 import Link from 'next/link';
-import type { Reserve, Service } from '@/types';
+import type { Reserve, Service, UpdateReserveDTO } from '@/types';
 import EditReservationDialog from '@/components/EditReservationDialog';
 import { toast } from 'react-hot-toast';
 import { useLiffMessage } from '@/hooks/useLiffMessage';
@@ -28,6 +28,14 @@ interface ReservationCardProps {
   reserve: ReserveWithServices;
   onCancel: (reserveId: number) => void;
   onEdit: (reserve: ReserveWithServices) => void;
+}
+
+interface UpdateReservationMessageData {
+  date: string;
+  time: string;
+  license: string;
+  serviceNames: string[];
+  isPickup: boolean;
 }
 
 const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) => {
@@ -102,6 +110,12 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
               <li key={item.service.id}>{item.service.name}</li>
             ))}
           </ul>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-semibold">到府牽車</span>
+            <Badge variant={reserve.isPickup ? 'default' : 'secondary'}>
+              {reserve.isPickup ? '是' : '否'}
+            </Badge>
+          </div>
         </div>
       </CardContent>
       {reserve.status === 'PENDING' && (
@@ -214,7 +228,11 @@ export default function RecordPage() {
       setIsEditDialogOpen(true);
   };
 
-  const handleUpdateReservation = async (id: number, data: any, messageData?: any) => {
+  const handleUpdateReservation = async (
+    id: number,
+    data: UpdateReserveDTO,
+    messageData?: UpdateReservationMessageData
+  ) => {
       try {
           const idToken = liff.getIDToken();
           if (!idToken) throw new Error('無法取得 ID token');

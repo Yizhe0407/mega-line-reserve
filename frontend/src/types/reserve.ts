@@ -18,22 +18,28 @@ export interface Reserve {
   status: ReserveStatus;
   userMemo?: string;
   adminMemo?: string;
+  isPickup: boolean;
   createdAt: string;
   updatedAt: string;
   date: string;
 }
 
 export interface CreateReserveDTO {
-  timeSlotId: number;
-  license: string;
-  serviceIds: number[];
-  userMemo?: string;
-  date: string;
+    timeSlotId: number;
+    license: string;
+    serviceIds: number[];
+    userMemo?: string;
+    date: string;
+    isPickup: boolean;
 }
 
 export interface UpdateReserveDTO {
-  status?: ReserveStatus;
-  adminMemo?: string;
-  timeSlotId?: number;
-  license?: string;
+    status?: ReserveStatus;
+    adminMemo?: string;
+    timeSlotId?: number;
+    license?: string;
+    date?: string;
+    serviceIds?: number[];
+    userMemo?: string;
+    isPickup?: boolean;
 }

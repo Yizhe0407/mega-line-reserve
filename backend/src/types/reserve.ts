@@ -18,6 +18,7 @@ export interface CreateReserveDTO {
     serviceIds: number[];
     userMemo?: string;
     date: string;
+    isPickup: boolean;
 }
 
 export interface UpdateReserveDTO {
@@ -28,4 +29,5 @@ export interface UpdateReserveDTO {
     date?: string;
     serviceIds?: number[];
     userMemo?: string;
+    isPickup?: boolean;
 }

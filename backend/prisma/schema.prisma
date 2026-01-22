@@ -61,6 +61,7 @@ model Reserve {
   license    String
   status     ReserveStatus @default(PENDING)
   date       DateTime      @db.Date
+  isPickup   Boolean       @default(false)
 
   userMemo  String?
   adminMemo String?

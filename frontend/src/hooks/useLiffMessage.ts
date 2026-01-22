@@ -220,6 +220,7 @@ export function useLiffMessage() {
         time: string; 
         license: string; 
         serviceNames: string[];
+        isPickup: boolean;
     }) => {
         try {
             const flexMessage: LiffMessage = {
@@ -339,6 +340,31 @@ export function useLiffMessage() {
                                                 wrap: true
                                             }
                                         ]
+                                    }
+                                ]
+                            },
+                            {
+                                type: "separator",
+                                margin: "xxl"
+                            },
+                            {
+                                type: "box",
+                                layout: "horizontal",
+                                margin: "md",
+                                contents: [
+                                    {
+                                        type: "text",
+                                        text: "到府牽車 Pickup Service",
+                                        size: "sm",
+                                        color: "#aaaaaa",
+                                        flex: 0
+                                    },
+                                    {
+                                        type: "text",
+                                        color: "#aaaaaa",
+                                        size: "sm",
+                                        align: "end",
+                                        text: data.isPickup ? "是" : "否"
                                     }
                                 ]
                             }

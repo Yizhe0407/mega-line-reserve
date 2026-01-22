@@ -8,10 +8,9 @@ import { format } from 'date-fns';
 import { isPastTime } from '@/lib/handleTime';
 import { timeSlot as timeSlotApi } from '@/lib/api';
 import { useStepStore } from '@/store/step-store';
-import type { Reserve, TimeSlot } from '@/types';
+import type { Reserve, TimeSlot, Service, UpdateReserveDTO } from '@/types';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,13 +18,30 @@ interface EditReservationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   reserve: Reserve;
-  onUpdate: (id: number, data: any, messageData?: any) => Promise<void>;
+  onUpdate: (id: number, data: UpdateReserveDTO, messageData?: UpdateReservationMessageData) => Promise<void>;
+}
+
+interface ReserveServiceItem {
+  service: Service;
+}
+
+interface ReserveWithServices extends Reserve {
+  services?: ReserveServiceItem[];
+}
+
+interface UpdateReservationMessageData {
+  date: string;
+  time: string;
+  license: string;
+  serviceNames: string[];
+  isPickup: boolean;
 }
 
 export default function EditReservationDialog({ isOpen, onClose, reserve, onUpdate }: EditReservationDialogProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [timeSlotId, setTimeSlotId] = useState<number | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [isPickup, setIsPickup] = useState(false);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,8 +56,9 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
       }
 
       setTimeSlotId(reserve.timeSlotId);
+      setIsPickup(reserve.isPickup || false);
 
-      const serviceIds = (reserve as any).services?.map((s: any) => s.service.id) || [];
+      const serviceIds = (reserve as ReserveWithServices).services?.map((s) => s.service.id) || [];
       setSelectedServices(serviceIds);
     }
   }, [reserve, isOpen]);
@@ -91,10 +108,11 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
 
     setIsSubmitting(true);
     try {
-      const updateData = {
+      const updateData: UpdateReserveDTO = {
         date: format(date, 'yyyy-MM-dd'),
         timeSlotId,
         serviceIds: selectedServices,
+        isPickup,
       };
       
       const selectedSlot = timeSlots.find(s => s.id === timeSlotId);
@@ -102,11 +120,12 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
           .filter(s => selectedServices.includes(s.id))
           .map(s => s.name);
 
-      const messageData = {
+        const messageData: UpdateReservationMessageData = {
           date: format(date, 'yyyy-MM-dd'),
           time: selectedSlot?.startTime || '',
           license: reserve.license,
-          serviceNames: selectedServiceNames
+          serviceNames: selectedServiceNames,
+          isPickup
       };
 
       await onUpdate(reserve.id, updateData, messageData);
@@ -167,6 +186,22 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
                />
              </div>
           </div>
+
+           {/* Pickup Service Selection */}
+           <div className="space-y-3">
+             <div className="flex items-center space-x-2 border rounded-lg p-4">
+               <Checkbox 
+                 id="edit-pickup" 
+                 checked={isPickup}
+                 onCheckedChange={(checked) => setIsPickup(checked as boolean)}
+               />
+               <div className="grid gap-1.5 leading-none">
+                 <Label htmlFor="edit-pickup" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                   需要到府牽車
+                 </Label>
+               </div>
+             </div>
+           </div>
 
            {/* Time Selection */}
            <div className="space-y-3">
