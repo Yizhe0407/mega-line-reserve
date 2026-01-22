@@ -7,6 +7,7 @@ import { useStepStore } from "@/store/step-store";
 import { useShallow } from "zustand/react/shallow";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
 import { createReserve } from "@/lib/api/endpoints/reserve";
+import { useSWRConfig } from "swr";
 
 export default function StepButtonGroup({
   isLoading = false,
@@ -34,6 +35,7 @@ export default function StepButtonGroup({
   const FIRST_STEP = 1;
   const TOTAL_STEP = 4;
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   // 第一頁時「上一步」禁用，否則啟用
   const isPreviousDisabled = currentStep === FIRST_STEP;
 
@@ -57,6 +59,7 @@ export default function StepButtonGroup({
         throw new Error("無法取得 ID token");
       }
       await createReserve(reserveData, idToken);
+      await mutate((key) => Array.isArray(key) && key[0] === "reserves");
     } catch (error) {
       console.error("Error during send:", error);
     }

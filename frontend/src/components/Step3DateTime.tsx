@@ -1,35 +1,20 @@
 'use client'
 import { format } from 'date-fns'
 import { zhTW } from 'date-fns/locale';
-import { useState, useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { isPastTime } from "@/lib/handleTime"
-import { getActiveTimeSlots } from "@/lib/api/endpoints/timeSlot"
 import StepButtonGroup from "./StepButtonGroup"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
 import { Calendar } from "@/components/ui/calendar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { TimeSlot } from "@/types"
+import { useActiveTimeSlots } from "@/hooks/useActiveTimeSlots"
 
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data)
   const setStep3Data = useStepStore((state) => state.setStep3Data)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-
-  useEffect(() => {
-    const getTimeSlots = async () => {
-      try {
-        const data = await getActiveTimeSlots();
-        // 確保回傳的是陣列
-        setTimeSlots(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Error fetching time slots:", error)
-        setTimeSlots([]); // 發生錯誤時設為空陣列
-      }
-    }
-    getTimeSlots()
-  }, [])
+  const { timeSlots } = useActiveTimeSlots();
 
   const filteredSlots = useMemo(() => {
     if (!step3Data.date) return [];

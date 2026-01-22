@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import useSWR from "swr";
 import toast from "react-hot-toast";
 import liff from "@line/liff";
 import {
@@ -9,9 +10,26 @@ import {
 } from "@/lib/api/endpoints/timeSlot";
 import type { TimeSlot } from "@/types";
 
-export function useTimeSlots() {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [error, setError] = useState<string | null>(null);
+export function useTimeSlots(enabled = true) {
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const { data, error, isLoading, mutate } = useSWR<TimeSlot[]>(
+    enabled ? "admin-time-slots" : null,
+    async () => {
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        throw new Error("無法取得 ID token");
+      }
+      const data = await getAllTimeSlots(idToken);
+      return Array.isArray(data) ? data : [];
+    },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    }
+  );
+
+  const timeSlots = data ?? [];
 
   // 按星期分組時段
   const groupedSlots = useMemo(() => {
@@ -30,13 +48,8 @@ export function useTimeSlots() {
   }, [timeSlots]);
 
   const loadTimeSlots = useCallback(async () => {
-    const idToken = liff.getIDToken();
-    if (!idToken) {
-      throw new Error("無法取得 ID token");
-    }
-    const data = await getAllTimeSlots(idToken);
-    setTimeSlots(data);
-  }, []);
+    await mutate();
+  }, [mutate]);
 
   const createTimeSlot = useCallback(
     async (data: {
@@ -50,9 +63,9 @@ export function useTimeSlots() {
         throw new Error("無法取得 ID token");
       }
       await createTimeSlotApi(data, idToken);
-      await loadTimeSlots();
+      await mutate();
     },
-    [loadTimeSlots]
+    [mutate]
   );
 
   const updateTimeSlot = useCallback(
@@ -70,9 +83,9 @@ export function useTimeSlots() {
         throw new Error("無法取得 ID token");
       }
       await updateTimeSlotApi(id, data, idToken);
-      await loadTimeSlots();
+      await mutate();
     },
-    [loadTimeSlots]
+    [mutate]
   );
 
   const deleteTimeSlot = useCallback(
@@ -82,15 +95,15 @@ export function useTimeSlots() {
         throw new Error("無法取得 ID token");
       }
       await deleteTimeSlotApi(id, idToken);
-      await loadTimeSlots();
+      await mutate();
     },
-    [loadTimeSlots]
+    [mutate]
   );
 
   const toggleActive = useCallback(
     async (slot: TimeSlot) => {
       try {
-        setError(null);
+        setActionError(null);
         await updateTimeSlot(slot.id, {
           dayOfWeek: slot.dayOfWeek,
           startTime: slot.startTime,
@@ -100,7 +113,7 @@ export function useTimeSlots() {
         toast.success(slot.isActive ? "時段已停用" : "時段已啟用");
       } catch (err) {
         const message = err instanceof Error ? err.message : "更新失敗";
-        setError(message);
+        setActionError(message);
         toast.error(message);
       }
     },
@@ -110,7 +123,7 @@ export function useTimeSlots() {
   const copySlots = useCallback(
     async (sourceDay: number, targetDays: number[]) => {
       try {
-        setError(null);
+        setActionError(null);
         const idToken = liff.getIDToken();
         if (!idToken) {
           throw new Error("無法取得 ID token");
@@ -151,27 +164,31 @@ export function useTimeSlots() {
           }
         }
 
-        await loadTimeSlots();
+        await mutate();
         toast.success(`已複製到 ${targetDays.length} 天`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "複製失敗";
         // 只有非重複時段的嚴重錯誤才顯示
         if (!message.includes("已存在")) {
-           setError(message);
+           setActionError(message);
         }
         toast.error(message);
         throw err;
       }
     },
-    [groupedSlots, loadTimeSlots]
+    [groupedSlots, mutate]
   );
+
+  const errorMessage =
+    actionError ?? (error instanceof Error ? error.message : null);
 
   return {
     timeSlots,
     groupedSlots,
-    error,
-    setError,
+    error: errorMessage,
+    setError: setActionError,
     loadTimeSlots,
+    isLoading,
     createTimeSlot,
     updateTimeSlot,
     deleteTimeSlot,

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -14,19 +14,9 @@ import type { Service } from "@/types"
 
 
 export default function Step2ServiceSelect() {
-  const [isLoading, setIsLoading] = useState(true)
   const step2Data = useStepStore((state) => state.step2Data)
   const setStep2Data = useStepStore((state) => state.setStep2Data)
-  const { services, fetchServices } = useStepServices()
-
-  useEffect(() => {
-    const loadServices = async () => {
-      setIsLoading(true)
-      await fetchServices()
-      setIsLoading(false)
-    }
-    loadServices()
-  }, [fetchServices])
+  const { services, isLoading } = useStepServices()
 
   const toggleService = (serviceId: number) => {
     const current = step2Data?.selectServe || []

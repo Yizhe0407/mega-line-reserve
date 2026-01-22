@@ -1,7 +1,7 @@
 "use client";
 
 import toast from "react-hot-toast";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,22 +33,16 @@ export default function ServiceAdminPage() {
     services,
     error: servicesError,
     setError: setServicesError,
-    loadServices,
     createService,
     updateService,
     deleteService,
     toggleActive,
-  } = useServices();
+  } = useServices(isAdmin === true);
 
   const serviceDialog = useServiceDialog();
   const deleteDialog = useDeleteConfirmDialog<Service>();
 
-  // 初始載入服務
-  useEffect(() => {
-    if (isAdmin) {
-      loadServices();
-    }
-  }, [isAdmin, loadServices]);
+  // 初始載入服務由 SWR 管理
 
   const handleDialogSubmit = async () => {
     if (!serviceDialog.name.trim()) {

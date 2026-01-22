@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import liff from '@line/liff';
 import { useStepStore } from '@/store/step-store';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -145,50 +146,42 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
 };
 
 export default function RecordPage() {
-  const [reservations, setReservations] = useState<ReserveWithServices[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const userId = useStepStore((state) => state.userId);
   const { sendUpdateLineMessage } = useLiffMessage();
-  const { fetchServices } = useStepServices();
+  useStepServices();
 
   // Dialog State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReserve, setEditingReserve] = useState<ReserveWithServices | null>(null);
 
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+  const {
+    data: reservations = [],
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<ReserveWithServices[]>(
+    ['reserves', userId ?? 'anonymous'],
+    async () => {
+      const idToken = liff.getIDToken();
+      if (!idToken) throw new Error('無法取得 ID token。');
 
-  const fetchReservations = async () => {
-    try {
-        const idToken = liff.getIDToken();
-        if (!idToken) throw new Error('無法取得 ID token。');
-        
-        const data = (await getReserves(idToken)) as ReserveWithServices[];
-        const sortedData = data.sort(
-          (a: ReserveWithServices, b: ReserveWithServices) => {
-             if (a.date && b.date) {
-               const dateA = new Date(a.date).getTime();
-               const dateB = new Date(b.date).getTime();
-               if (dateA !== dateB) {
-                 return dateA - dateB; 
-               }
-             }
-            return 0;
-          },
-        );
-        setReservations(sortedData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '發生未知錯誤。');
-    } finally {
-      setIsLoading(false);
+      const data = (await getReserves(idToken)) as ReserveWithServices[];
+      return [...data].sort((a, b) => {
+        if (a.date && b.date) {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          if (dateA !== dateB) {
+            return dateA - dateB;
+          }
+        }
+        return 0;
+      });
+    },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
     }
-  };
-
-  useEffect(() => {
-    fetchReservations();
-  }, [userId]);
+  );
 
   const handleCancelReservation = async (reserveId: number) => {
     if (!confirm('您確定要取消這次的預約嗎？')) return;
@@ -199,7 +192,7 @@ export default function RecordPage() {
       
       await deleteReserve(reserveId, idToken);
 
-      setReservations((prev) => prev.filter((r) => r.id !== reserveId));
+      mutate((current) => current?.filter((r) => r.id !== reserveId), false);
       toast.success('預約已取消');
     } catch (err) {
       alert(err instanceof Error ? err.message : '發生未知錯誤。');
@@ -228,7 +221,7 @@ export default function RecordPage() {
              await sendUpdateLineMessage(messageData);
           }
 
-          fetchReservations();
+            await mutate();
       } catch (err) {
           toast.error(err instanceof Error ? err.message : '更新失敗');
           throw err; 
@@ -254,7 +247,7 @@ export default function RecordPage() {
         <Alert variant="destructive" className="w-full">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>發生錯誤</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{error instanceof Error ? error.message : '發生未知錯誤。'}</AlertDescription>
         </Alert>
       </div>
     );

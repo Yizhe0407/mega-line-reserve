@@ -122,39 +122,30 @@ export const updateReserve = async (
     if (isTimeChanged) {
         const newTimeSlotId = updatePayload.timeSlotId ?? existingReserve.timeSlotId;
         const newDateStr = updatePayload.date ?? existingReserve.date.toISOString().split('T')[0];
-        
-        // 如果變更了時段ID，檢查時段是否存在
-        if (updatePayload.timeSlotId) {
-             const timeSlot = await timeSlotModel.getTimeSlotById(updatePayload.timeSlotId);
-            if (!timeSlot || !timeSlot.isActive) {
-                throw new ValidationError("預約時段不存在或已停用");
-            }
+        const existingDateTime = existingReserve.date.getTime();
+
+        // 檢查新時段是否存在/啟用（僅當有時間相關變更）
+        const timeSlot = await timeSlotModel.getTimeSlotById(newTimeSlotId);
+        if (!timeSlot || !timeSlot.isActive) {
+            throw new ValidationError("預約時段不存在或已停用");
         }
 
         // 檢查新時段是否額滿 (如果是改到不同時段或不同天)
         // 注意：如果只是改服務(沒改時間)，不會進這裡
-        const isTimeActuallyChanged = newTimeSlotId !== existingReserve.timeSlotId || 
-                         (updatePayload.date && new Date(updatePayload.date).getTime() !== new Date(existingReserve.date).getTime());
+        const isTimeActuallyChanged =
+            newTimeSlotId !== existingReserve.timeSlotId ||
+            (updatePayload.date && new Date(updatePayload.date).getTime() !== existingDateTime);
 
         if (isTimeActuallyChanged) {
-             const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(newTimeSlotId, newDateStr);
-            
-             // 再次取得時段 capactiy (剛才可能沒取)
-             // 為了效能，我們可以只在 ID 變更時取，但這裡為了保險起見，如果是日期變更但 ID 沒變，也要知道 capacity
-             let capacity = 1;
-             if (updatePayload.timeSlotId) {
-                 // 有傳 ID，前面已經檢查並可取得 (雖然前面沒 return timeSlot) -> 為了簡化，直接再取一次或優化流程
-                 const ts = await timeSlotModel.getTimeSlotById(newTimeSlotId);
-                 capacity = ts?.capacity ?? 1;
-             } else {
-                 // 沒傳 ID (只改日期)，用舊 ID 查 capacity
-                 const ts = await timeSlotModel.getTimeSlotById(existingReserve.timeSlotId);
-                 capacity = ts?.capacity ?? 1;
-             }
+            const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(
+                newTimeSlotId,
+                newDateStr
+            );
+            const capacity = timeSlot.capacity ?? 1;
 
-             if (reserveCount >= capacity) {
-                 throw new ValidationError("該時段已額滿");
-             }
+            if (reserveCount >= capacity) {
+                throw new ValidationError("該時段已額滿");
+            }
         }
     }
 

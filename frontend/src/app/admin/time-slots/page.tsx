@@ -1,7 +1,6 @@
 "use client";
 
 import toast from "react-hot-toast";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,29 +40,24 @@ const TIME_OPTIONS = Array.from({ length: 23 }, (_, i) => {
 
 export default function TimeSlotAdminPage() {
   const router = useRouter();
-  const { isAdmin, isLoading, error: authError } = useAdminAuth();
+  const { isAdmin, isLoading: isAuthLoading, error: authError } = useAdminAuth();
   const {
     groupedSlots,
     error: slotsError,
     setError: setSlotsError,
-    loadTimeSlots,
+    isLoading: isSlotsLoading,
     createTimeSlot,
     updateTimeSlot,
     deleteTimeSlot,
     toggleActive,
     copySlots,
-  } = useTimeSlots();
+  } = useTimeSlots(isAdmin === true);
 
   const timeSlotDialog = useTimeSlotDialog();
   const copyDialog = useCopySlotDialog();
   const deleteDialog = useDeleteConfirmDialog();
 
-  // 初始載入時段
-  useEffect(() => {
-    if (isAdmin) {
-      loadTimeSlots();
-    }
-  }, [isAdmin, loadTimeSlots]);
+  const isDataLoading = isAuthLoading || (isAdmin ? isSlotsLoading : false);
 
   const handleDialogSubmit = async () => {
     if (timeSlotDialog.selectedTimes.length === 0) {
@@ -158,7 +152,7 @@ export default function TimeSlotAdminPage() {
     });
   };
 
-  if (isLoading) {
+  if (isDataLoading) {
     return (
       <div className="min-h-screen bg-background px-4 py-10">
         <Card>
