@@ -5,23 +5,32 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
-import * as api from "@/lib/api";
+import { createReserve } from "@/lib/api/endpoints/reserve";
 
 export default function StepButtonGroup({
   isLoading = false,
   isNextDisabled = false,
 }) {
-  const currentStep = useStepStore((step) => step.currentStep);
-  const prevStep = useStepStore((step) => step.prevStep);
-  const nextStep = useStepStore((step) => step.nextStep);
-  const reset = useStepStore((step) => step.reset);
+  const {
+    currentStep,
+    prevStep,
+    nextStep,
+    reset,
+    step1Data,
+    step2Data,
+    step3Data,
+  } = useStepStore((state) => ({
+    currentStep: state.currentStep,
+    prevStep: state.prevStep,
+    nextStep: state.nextStep,
+    reset: state.reset,
+    step1Data: state.step1Data,
+    step2Data: state.step2Data,
+    step3Data: state.step3Data,
+  }));
   const FIRST_STEP = 1;
   const TOTAL_STEP = 4;
   const router = useRouter();
-  const step1Data = useStepStore((state) => state.step1Data);
-  const step2Data = useStepStore((state) => state.step2Data);
-  const step3Data = useStepStore((state) => state.step3Data);
-
   // 第一頁時「上一步」禁用，否則啟用
   const isPreviousDisabled = currentStep === FIRST_STEP;
 
@@ -44,7 +53,7 @@ export default function StepButtonGroup({
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await api.reserve.createReserve(reserveData, idToken);
+      await createReserve(reserveData, idToken);
     } catch (error) {
       console.error("Error during send:", error);
     }

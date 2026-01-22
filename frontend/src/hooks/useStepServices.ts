@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { service as serviceApi } from '@/lib/api';
+import { getAllServices } from '@/lib/api/endpoints/service';
 import { useStepStore } from '@/store/step-store';
 
 export function useStepServices() {
@@ -14,7 +14,7 @@ export function useStepServices() {
       return;
     }
     try {
-      const data = await serviceApi.getAllServices();
+      const data = await getAllServices();
       setServices(data);
     } catch (error) {
       console.error('Error fetching services:', error);

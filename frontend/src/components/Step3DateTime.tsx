@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { zhTW } from 'date-fns/locale';
 import { useState, useEffect, useMemo } from "react"
 import { isPastTime } from "@/lib/handleTime"
-import { timeSlot as timeSlotApi } from "@/lib/api"
+import { getActiveTimeSlots } from "@/lib/api/endpoints/timeSlot"
 import StepButtonGroup from "./StepButtonGroup"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -20,7 +20,7 @@ export default function Step3DateTime() {
   useEffect(() => {
     const getTimeSlots = async () => {
       try {
-        const data = await timeSlotApi.getActiveTimeSlots();
+        const data = await getActiveTimeSlots();
         // 確保回傳的是陣列
         setTimeSlots(Array.isArray(data) ? data : []);
       } catch (error) {

@@ -17,7 +17,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit, Save, X, Loader2, Info, ArrowLeft } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import liff from "@line/liff";
-import { auth, user as userApi, FetchError } from "@/lib/api";
+import { login } from "@/lib/api/endpoints/auth";
+import {
+  updateUser,
+  getUserByLineId,
+} from "@/lib/api/endpoints/user";
+import { FetchError } from "@/lib/api/core/fetch-wrapper";
 
 interface ProfileFormData {
   pictureUrl?: string;
@@ -101,7 +106,7 @@ function ProfilePageContent() {
 
       let updatedProfile;
       if (isNewUser) {
-        const created = await auth.login(
+        const created = await login(
           {
             phone: localData.phone,
             license: localData.license,
@@ -110,7 +115,7 @@ function ProfilePageContent() {
         );
 
         const createdUser = created.user;
-        updatedProfile = await userApi.updateUser(
+        updatedProfile = await updateUser(
           createdUser.id,
           {
             name: localData.name || createdUser.name,
@@ -125,12 +130,12 @@ function ProfilePageContent() {
         let targetUserId = userId;
         if (!targetUserId) {
           const resolvedLineId = lineId || (await liff.getProfile()).userId;
-          const currentUser = await userApi.getUserByLineId(resolvedLineId, idToken);
+          const currentUser = await getUserByLineId(resolvedLineId, idToken);
           targetUserId = currentUser.id;
           setUserId(targetUserId);
         }
 
-        updatedProfile = await userApi.updateUser(
+        updatedProfile = await updateUser(
           targetUserId,
           {
             name: localData.name,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import liff from "@line/liff";
 import { ensureLiffInit } from "@/lib/liff";
-import { auth } from "@/lib/api";
+import { getMe } from "@/lib/api/endpoints/auth";
 
 export function useAdminAuth() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -27,7 +27,7 @@ export function useAdminAuth() {
         }
 
         setIdToken(token);
-        const me = await auth.getMe(token);
+        const me = await getMe(token);
         setIsAdmin(me.user.role === "ADMIN");
       } catch (err) {
         setError(err instanceof Error ? err.message : "載入失敗");

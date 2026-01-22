@@ -15,6 +15,8 @@ import EditReservationDialog from '@/components/EditReservationDialog';
 import { toast } from 'react-hot-toast';
 import { useLiffMessage } from '@/hooks/useLiffMessage';
 import { format } from 'date-fns';
+import { useStepServices } from '@/hooks/useStepServices';
+import { getReserves, updateReserve, deleteReserve } from '@/lib/api/endpoints/reserve';
 
 interface ReserveServiceItem {
   service: Service;
@@ -146,38 +148,24 @@ export default function RecordPage() {
   const [reservations, setReservations] = useState<ReserveWithServices[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { userId, setServices } = useStepStore();
+  const userId = useStepStore((state) => state.userId);
   const { sendUpdateLineMessage } = useLiffMessage();
+  const { fetchServices } = useStepServices();
 
   // Dialog State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingReserve, setEditingReserve] = useState<ReserveWithServices | null>(null);
 
   useEffect(() => {
-    const loadServices = async () => {
-        try {
-            const res = await fetch('/api/service');
-            if (res.ok) {
-                const data = await res.json();
-                setServices(data);
-            }
-        } catch(e) { console.error(e); }
-    };
-    loadServices();
-  }, [setServices]);
+    fetchServices();
+  }, [fetchServices]);
 
   const fetchReservations = async () => {
     try {
         const idToken = liff.getIDToken();
         if (!idToken) throw new Error('無法取得 ID token。');
         
-        const response = await fetch(`/api/reserve`, {
-          headers: { 'Authorization': `Bearer ${idToken}` },
-        });
-
-        if (!response.ok) throw new Error('無法獲取預約紀錄。');
-
-        const data = await response.json();
+        const data = (await getReserves(idToken)) as ReserveWithServices[];
         const sortedData = data.sort(
           (a: ReserveWithServices, b: ReserveWithServices) => {
              if (a.date && b.date) {
@@ -209,12 +197,7 @@ export default function RecordPage() {
       const idToken = liff.getIDToken();
       if (!idToken) throw new Error('無法取得 ID token。');
       
-      const response = await fetch(`/api/reserve/${reserveId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${idToken}` },
-      });
-
-      if (!response.ok) throw new Error('取消預約失敗。');
+      await deleteReserve(reserveId, idToken);
 
       setReservations((prev) => prev.filter((r) => r.id !== reserveId));
       toast.success('預約已取消');
@@ -237,19 +220,7 @@ export default function RecordPage() {
           const idToken = liff.getIDToken();
           if (!idToken) throw new Error('無法取得 ID token');
           
-          const response = await fetch(`/api/reserve/${id}`, {
-              method: 'PUT',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${idToken}` 
-              },
-              body: JSON.stringify(data)
-          });
-
-          if (!response.ok) {
-              const errData = await response.json();
-              throw new Error(errData.message || '更新失敗');
-          }
+            await updateReserve(id, data, idToken);
 
           toast.success('預約更新成功！');
           

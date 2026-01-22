@@ -1,7 +1,6 @@
 import liff from "@line/liff";
 import { useStepStore } from "@/store/step-store";
-import { useState, useEffect } from "react";
-import { service as serviceApi } from "@/lib/api";
+import { useMemo } from "react";
 import type { Service } from "@/types";
 
 type LiffMessage = Parameters<typeof liff.sendMessages>[0][number];
@@ -10,23 +9,10 @@ export function useLiffMessage() {
     const step1Data = useStepStore((state) => state.step1Data);
     const step2Data = useStepStore((state) => state.step2Data);
     const step3Data = useStepStore((state) => state.step3Data);
-    const [services, setServices] = useState<Service[]>([]);
-
-    useEffect(() => {
-        const fetchServices = async () => {
-            try {
-                const data = await serviceApi.getAllServices();
-                setServices(data);
-            } catch (error) {
-                console.error('Error fetching services:', error);
-            }
-        };
-
-        fetchServices();
-    }, []);
+    const services = useStepStore((state) => state.services) as Service[];
 
     // 處理服務項目顯示
-    const getServiceList = () => {
+    const getServiceList = useMemo(() => {
         if (services.length === 0) return "";
         const otherService = services.find((s) => s.name === '其他');
         const list = (step2Data.selectServe || []).map((id) => {
@@ -37,7 +23,7 @@ export function useLiffMessage() {
             return service ? service.name : "";
         });
         return list.join('、');
-    };
+    }, [services, step2Data.selectServe, step2Data.otherService]);
 
     const sendLineMessage = async () => {
         try {
@@ -162,7 +148,7 @@ export function useLiffMessage() {
                                             },
                                             {
                                                 type: "text",
-                                                text: getServiceList(),
+                                                text: getServiceList,
                                                 size: "md",
                                                 color: "#111111",
                                                 align: "end",

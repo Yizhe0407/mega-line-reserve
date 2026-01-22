@@ -1,7 +1,7 @@
 "use client";
 
 import toast from "react-hot-toast";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,14 @@ export default function ServiceAdminPage() {
 
   const error = authError || servicesError;
 
+  const sortedServices = useMemo(() => {
+    return [...services].sort((a, b) => {
+      if (a.isActive && !b.isActive) return -1;
+      if (!a.isActive && b.isActive) return 1;
+      return 0;
+    });
+  }, [services]);
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto space-y-4">
@@ -155,14 +163,7 @@ export default function ServiceAdminPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services
-            .sort((a, b) => {
-              // 已啟用的排在前面
-              if (a.isActive && !b.isActive) return -1;
-              if (!a.isActive && b.isActive) return 1;
-              return 0;
-            })
-            .map((service) => (
+          {sortedServices.map((service) => (
               <ServiceCard
                 key={service.id}
                 service={service}

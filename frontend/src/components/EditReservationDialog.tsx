@@ -6,7 +6,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { zhTW } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { isPastTime } from '@/lib/handleTime';
-import { timeSlot as timeSlotApi } from '@/lib/api';
+import { getActiveTimeSlots } from '@/lib/api/endpoints/timeSlot';
 import { useStepStore } from '@/store/step-store';
 import type { Reserve, TimeSlot, Service, UpdateReserveDTO } from '@/types';
 import { Label } from '@/components/ui/label';
@@ -68,7 +68,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
     const fetchTimeSlots = async () => {
       setIsLoadingSlots(true);
       try {
-        const data = await timeSlotApi.getActiveTimeSlots();
+        const data = await getActiveTimeSlots();
         setTimeSlots(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Failed to fetch time slots", error);

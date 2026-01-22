@@ -1,7 +1,12 @@
 import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import liff from "@line/liff";
-import { service as serviceApi } from "@/lib/api";
+import {
+  getAllServices,
+  createService as createServiceApi,
+  updateService as updateServiceApi,
+  deleteService as deleteServiceApi,
+} from "@/lib/api/endpoints/service";
 import type { Service, CreateServiceDTO, UpdateServiceDTO } from "@/types";
 
 export function useServices() {
@@ -10,7 +15,7 @@ export function useServices() {
 
   const loadServices = useCallback(async () => {
     try {
-      const data = await serviceApi.getAllServices();
+      const data = await getAllServices();
       setServices(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "載入失敗";
@@ -25,7 +30,7 @@ export function useServices() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await serviceApi.createService(data, idToken);
+      await createServiceApi(data, idToken);
       await loadServices();
     },
     [loadServices]
@@ -37,7 +42,7 @@ export function useServices() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await serviceApi.updateService(id, data, idToken);
+      await updateServiceApi(id, data, idToken);
       await loadServices();
     },
     [loadServices]
@@ -49,7 +54,7 @@ export function useServices() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await serviceApi.deleteService(id, idToken);
+      await deleteServiceApi(id, idToken);
       await loadServices();
     },
     [loadServices]

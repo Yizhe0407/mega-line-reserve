@@ -1,7 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
 import liff from "@line/liff";
-import { timeSlot as timeSlotApi } from "@/lib/api";
+import {
+  getAllTimeSlots,
+  createTimeSlot as createTimeSlotApi,
+  updateTimeSlot as updateTimeSlotApi,
+  deleteTimeSlot as deleteTimeSlotApi,
+} from "@/lib/api/endpoints/timeSlot";
 import type { TimeSlot } from "@/types";
 
 export function useTimeSlots() {
@@ -29,7 +34,7 @@ export function useTimeSlots() {
     if (!idToken) {
       throw new Error("無法取得 ID token");
     }
-    const data = await timeSlotApi.getAllTimeSlots(idToken);
+    const data = await getAllTimeSlots(idToken);
     setTimeSlots(data);
   }, []);
 
@@ -44,7 +49,7 @@ export function useTimeSlots() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await timeSlotApi.createTimeSlot(data, idToken);
+      await createTimeSlotApi(data, idToken);
       await loadTimeSlots();
     },
     [loadTimeSlots]
@@ -64,7 +69,7 @@ export function useTimeSlots() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await timeSlotApi.updateTimeSlot(id, data, idToken);
+      await updateTimeSlotApi(id, data, idToken);
       await loadTimeSlots();
     },
     [loadTimeSlots]
@@ -76,7 +81,7 @@ export function useTimeSlots() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await timeSlotApi.deleteTimeSlot(id, idToken);
+      await deleteTimeSlotApi(id, idToken);
       await loadTimeSlots();
     },
     [loadTimeSlots]
@@ -121,13 +126,13 @@ export function useTimeSlots() {
           // 1. 刪除目標日期的所有時段
           const targetSlots = groupedSlots[targetDay] || [];
           await Promise.all(
-            targetSlots.map((slot) => timeSlotApi.deleteTimeSlot(slot.id, idToken))
+            targetSlots.map((slot) => deleteTimeSlotApi(slot.id, idToken))
           );
 
           // 2. 複製來源日期的時段到目標日期
           const results = await Promise.allSettled(
             sourceSlots.map((slot) =>
-              timeSlotApi.createTimeSlot(
+              createTimeSlotApi(
                 {
                   dayOfWeek: targetDay,
                   startTime: slot.startTime,
