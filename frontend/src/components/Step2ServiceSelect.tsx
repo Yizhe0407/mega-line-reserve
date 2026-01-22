@@ -67,16 +67,18 @@ export default function Step2ServiceSelect() {
                     <Skeleton className="h-12 w-full" />
                   </>
                 ) : (
-                  services.map((service: Service) => (
-                    <Button
-                      key={service.id}
-                      variant={step2Data?.selectServe?.includes(service.id) ? "default" : "outline"}
-                      onClick={() => toggleService(service.id)}
-                      className="h-12 justify-start"
-                    >
-                      {service.name}
-                    </Button>
-                  ))
+                  services
+                    .filter((service: Service) => service.isActive)
+                    .map((service: Service) => (
+                      <Button
+                        key={service.id}
+                        variant={step2Data?.selectServe?.includes(service.id) ? "default" : "outline"}
+                        onClick={() => toggleService(service.id)}
+                        className="h-12 justify-start"
+                      >
+                        {service.name}
+                      </Button>
+                    ))
                 )}
               </div>
             </div>

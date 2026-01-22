@@ -1,7 +1,8 @@
 'use client'
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, User, History } from "lucide-react";
+import { Calendar, User, History, Settings } from "lucide-react";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const navItems = [
   { href: "/", label: "預約", icon: Calendar },
@@ -11,12 +12,18 @@ const navItems = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const { isAdmin } = useAdminAuth();
+
+  // 如果是管理員，加入後台管理按鈕
+  const items = isAdmin 
+    ? [...navItems, { href: "/admin", label: "後台管理", icon: Settings }]
+    : navItems;
 
   return (
     <div className="fixed inset-x-0 bottom-0 border-t bg-background">
       <nav className="mx-auto flex max-w-md">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+        {items.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || (href === "/admin" && pathname.startsWith("/admin"));
             return (
               <Link
                 key={href}

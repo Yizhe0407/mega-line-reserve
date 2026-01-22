@@ -1,10 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { Service } from "@/types/service";
 
 interface ServiceDeleteDialogProps {
@@ -21,28 +16,27 @@ export function ServiceDeleteDialog({
   onConfirm,
 }: ServiceDeleteDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>確認刪除</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          {service && (
-            <div className="text-sm">
-              確定要刪除服務{" "}
-              <span className="font-semibold">{service.name}</span> 嗎？
-            </div>
-          )}
-          <div className="flex gap-2 pt-4">
-            <Button variant="destructive" onClick={onConfirm} className="flex-1">
-              確認刪除
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              取消
-            </Button>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="確認刪除"
+    >
+      <div className="space-y-4 py-4">
+        {service && (
+          <div className="text-sm">
+            確定要刪除服務{" "}
+            <span className="font-semibold">{service.name}</span> 嗎？
           </div>
+        )}
+        <div className="flex gap-2 pt-4">
+          <Button variant="destructive" onClick={onConfirm} className="flex-1">
+            確認刪除
+          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 }

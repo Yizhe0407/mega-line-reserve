@@ -155,13 +155,20 @@ export default function ServiceAdminPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              onClick={() => serviceDialog.openEditDialog(service)}
-            />
-          ))}
+          {services
+            .sort((a, b) => {
+              // 已啟用的排在前面
+              if (a.isActive && !b.isActive) return -1;
+              if (!a.isActive && b.isActive) return 1;
+              return 0;
+            })
+            .map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                onClick={() => serviceDialog.openEditDialog(service)}
+              />
+            ))}
         </div>
 
         {services.length === 0 && !error && (

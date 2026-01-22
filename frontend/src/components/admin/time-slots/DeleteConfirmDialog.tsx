@@ -1,10 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { TimeSlot } from "@/types/timeSlot";
 
 interface DeleteConfirmDialogProps {
@@ -23,28 +18,27 @@ export function DeleteConfirmDialog({
   onConfirm,
 }: DeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>確認刪除</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          {slot && (
-            <div className="text-sm">
-              確定要刪除 <span className="font-semibold">{weekdays[slot.dayOfWeek]}</span> 的{" "}
-              <span className="font-semibold">{slot.startTime}</span> 時段嗎？
-            </div>
-          )}
-          <div className="flex gap-2 pt-4">
-            <Button variant="destructive" onClick={onConfirm} className="flex-1">
-              確認刪除
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              取消
-            </Button>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="確認刪除"
+    >
+      <div className="space-y-4 py-4">
+        {slot && (
+          <div className="text-sm">
+            確定要刪除 <span className="font-semibold">{weekdays[slot.dayOfWeek]}</span> 的{" "}
+            <span className="font-semibold">{slot.startTime}</span> 時段嗎？
           </div>
+        )}
+        <div className="flex gap-2 pt-4">
+          <Button variant="destructive" onClick={onConfirm} className="flex-1">
+            確認刪除
+          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 }
