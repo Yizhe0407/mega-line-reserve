@@ -13,8 +13,15 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CORS 設定
+const getCorsOrigin = () => {
+    const origin = process.env.CORS_ORIGIN;
+    if (!origin) return ['http://localhost:3000', 'http://frontend:3000'];
+    if (origin === '*') return true; // 允許所有來源
+    return origin.split(',').map((o) => o.trim()); // 支援逗號分隔多來源
+};
+
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://frontend:3000'],
+    origin: getCorsOrigin(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

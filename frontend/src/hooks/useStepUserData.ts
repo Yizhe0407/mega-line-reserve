@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { login } from '@/lib/api/endpoints/auth';
 import { ensureLiffInit } from '@/lib/liff';
 import { useStepStore } from '@/store/step-store';
+import { FetchError } from '@/lib/api/core/fetch-wrapper';
 
 type RouterLike = { push: (url: string) => void } | null | undefined;
 
@@ -17,25 +18,6 @@ export function useStepUserData() {
   const fetchUserData = async (router?: RouterLike) => {
     setIsLoading(true);
     try {
-      const liffBypass =
-        process.env.NEXT_PUBLIC_LIFF_BYPASS === 'true' ||
-        process.env.NODE_ENV === 'development';
-      if (liffBypass) {
-        setUserId(0);
-        setLineId('dev-line');
-        setStep1Data({
-          pictureUrl: '',
-          name: 'DEV',
-          phone: '',
-          license: '',
-        });
-        toast('已啟用開發模式，略過 LIFF 驗證');
-        if (router) {
-          router.push('/profile?new=true');
-        }
-        return;
-      }
-
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
       if (!liffId) {
         console.error('LIFF ID is not defined.');
@@ -44,11 +26,6 @@ export function useStepUserData() {
       }
 
       await ensureLiffInit({ withLoginOnExternalBrowser: true });
-
-      if (!liff.isInClient() && !liffBypass) {
-        toast.error('此網站僅支援在 LINE 內開啟');
-        return;
-      }
 
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: window.location.href });
@@ -59,13 +36,13 @@ export function useStepUserData() {
       const lineId = lineProfile.userId;
       setLineId(lineId);
 
-      const accessToken = liff.getAccessToken();
-      if (!accessToken) {
-        toast.error('無法取得 access token');
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        toast.error('無法取得 ID token');
         return;
       }
 
-      const response = await login({}, accessToken);
+      const response = await login({}, idToken);
       setUserId(response.user.id);
 
       if (!response.user.phone || !response.user.license) {
@@ -88,6 +65,24 @@ export function useStepUserData() {
         license: response.user.license || '',
       });
     } catch (error) {
+      const isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === 'object' && value !== null;
+
+      // 處理新用戶錯誤
+      if (error instanceof FetchError && isRecord(error.data) && error.data.isNewUser) {
+        const lineProfile = isRecord(error.data.lineProfile) ? error.data.lineProfile : undefined;
+        setStep1Data({
+          pictureUrl: typeof lineProfile?.pictureUrl === 'string' ? lineProfile.pictureUrl : '',
+          name: typeof lineProfile?.displayName === 'string' ? lineProfile.displayName : '',
+          phone: '',
+          license: '',
+        });
+        if (router) {
+          router.push('/profile?new=true');
+        }
+        return;
+      }
+      
       console.error('LIFF/Profile process failed:', error);
       toast.error('初始化或讀取資料時發生錯誤');
     } finally {

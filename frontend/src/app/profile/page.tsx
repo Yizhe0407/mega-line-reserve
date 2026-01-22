@@ -19,6 +19,20 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 import liff from "@line/liff";
 import { auth, user as userApi, FetchError } from "@/lib/api";
 
+interface ProfileFormData {
+  pictureUrl?: string;
+  name?: string;
+  phone?: string;
+  license?: string;
+}
+
+interface ProfileErrors {
+  name?: string;
+  phone?: string;
+  license?: string;
+  form?: string;
+}
+
 function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,9 +45,9 @@ function ProfilePageContent() {
   const setUserId = useStepStore((state) => state.setUserId);
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
-  const [localData, setLocalData] = useState(step1Data);
+  const [localData, setLocalData] = useState<ProfileFormData>(step1Data);
   const [showNavigationTip, setShowNavigationTip] = useState(true);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<ProfileErrors>({});
 
   useEffect(() => {
     if (!isEditing) {
@@ -51,7 +65,7 @@ function ProfilePageContent() {
   }, [isNewUser, step1Data.pictureUrl]);
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors: ProfileErrors = {};
     if (!localData.name) newErrors.name = "姓名為必填";
     if (!localData.phone) newErrors.phone = "手機號碼為必填";
     if (!localData.license) newErrors.license = "車牌號碼為必填";
@@ -80,9 +94,9 @@ function ProfilePageContent() {
     if (!validate()) return;
     setIsSaving(true);
     try {
-      const accessToken = liff.getAccessToken();
-      if (!accessToken) {
-        throw new Error("無法取得 access token");
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        throw new Error("無法取得 ID token");
       }
 
       let updatedProfile;
@@ -92,7 +106,7 @@ function ProfilePageContent() {
             phone: localData.phone,
             license: localData.license,
           },
-          accessToken
+          idToken
         );
 
         const createdUser = created.user;
@@ -103,7 +117,7 @@ function ProfilePageContent() {
             phone: localData.phone,
             license: localData.license,
           },
-          accessToken
+          idToken
         );
 
         setUserId(updatedProfile.id);
@@ -111,7 +125,7 @@ function ProfilePageContent() {
         let targetUserId = userId;
         if (!targetUserId) {
           const resolvedLineId = lineId || (await liff.getProfile()).userId;
-          const currentUser = await userApi.getUserByLineId(resolvedLineId, accessToken);
+          const currentUser = await userApi.getUserByLineId(resolvedLineId, idToken);
           targetUserId = currentUser.id;
           setUserId(targetUserId);
         }
@@ -123,7 +137,7 @@ function ProfilePageContent() {
             phone: localData.phone,
             license: localData.license,
           },
-          accessToken
+          idToken
         );
       }
       setStep1Data({
@@ -282,9 +296,10 @@ function ProfilePageContent() {
                   <Input
                     id="profile-license"
                     value={localData?.license || ""}
-                    onChange={(e) => setLocalData({ ...localData, license: e.target.value })}
+                    onChange={(e) => setLocalData({ ...localData, license: e.target.value.toUpperCase() })}
                     className={`h-12 ${errors.license ? 'border-destructive' : ''}`}
                     disabled={isSaving}
+                    placeholder="例如：ABC-1234"
                   />
                   {errors.license && <p className="text-sm text-red-500">{errors.license}</p>}
                 </>

@@ -11,8 +11,23 @@ import { cn } from '@/lib/utils';
 import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import type { Reserve } from '@/types/reserve';
+import type { Service } from '@/types/service';
 
-const ReservationCard = ({ reserve, onCancel }) => {
+interface ReserveServiceItem {
+  service: Service;
+}
+
+interface ReserveWithServices extends Reserve {
+  services: ReserveServiceItem[];
+}
+
+interface ReservationCardProps {
+  reserve: ReserveWithServices;
+  onCancel: (reserveId: number) => void;
+}
+
+const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
   const reservationDate = new Date(reserve.reservationTime);
   const isPast = reservationDate < new Date();
   const status = isPast ? '已完成' : '已確認';
@@ -27,7 +42,7 @@ const ReservationCard = ({ reserve, onCancel }) => {
       variant: 'secondary',
       className: 'bg-gray-500 text-white',
     },
-  };
+  } as const;
   const currentStatus = statusConfig[status];
 
   return (
@@ -67,21 +82,21 @@ const ReservationCard = ({ reserve, onCancel }) => {
 };
 
 export default function RecordPage() {
-  const [reservations, setReservations] = useState([]);
+  const [reservations, setReservations] = useState<ReserveWithServices[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const { userId } = useStepStore();
 
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        const accessToken = liff.getAccessToken();
-        if (!accessToken) {
-          throw new Error('無法取得 access token。');
+        const idToken = liff.getIDToken();
+        if (!idToken) {
+          throw new Error('無法取得 ID token。');
         }
         const response = await fetch(`/api/reserve`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${idToken}`,
           },
         });
 
@@ -91,10 +106,13 @@ export default function RecordPage() {
 
         const data = await response.json();
         // Sort reservations by date in descending order
-        const sortedData = data.sort((a, b) => new Date(b.reservationTime) - new Date(a.reservationTime));
+        const sortedData = data.sort(
+          (a: ReserveWithServices, b: ReserveWithServices) =>
+            new Date(b.reservationTime).getTime() - new Date(a.reservationTime).getTime(),
+        );
         setReservations(sortedData);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : '發生未知錯誤。');
       } finally {
         setIsLoading(false);
       }
@@ -103,20 +121,20 @@ export default function RecordPage() {
     fetchReservations();
   }, [userId]);
 
-  const handleCancelReservation = async (reserveId) => {
+  const handleCancelReservation = async (reserveId: number) => {
     if (!confirm('您確定要取消這次的預約嗎？')) {
       return;
     }
 
     try {
-      const accessToken = liff.getAccessToken();
-      if (!accessToken) {
-        throw new Error('無法取得 access token。');
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        throw new Error('無法取得 ID token。');
       }
       const response = await fetch(`/api/reserve/${reserveId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${idToken}`,
         },
       });
 
@@ -124,9 +142,9 @@ export default function RecordPage() {
         throw new Error('取消預約失敗。');
       }
 
-      setReservations(reservations.filter(r => r.id !== reserveId));
+      setReservations((prev) => prev.filter((r) => r.id !== reserveId));
     } catch (err) {
-      alert(err.message);
+      alert(err instanceof Error ? err.message : '發生未知錯誤。');
     }
   };
 

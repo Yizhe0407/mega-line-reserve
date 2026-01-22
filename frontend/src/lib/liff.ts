@@ -39,13 +39,13 @@ export const ensureLiffInit = async (options?: { withLoginOnExternalBrowser?: bo
 };
 
 /**
- * 取得 access token
+ * 取得 id_token
  */
-export const getAccessToken = (): string | null => {
+export const getIdToken = (): string | null => {
     if (!liff.isLoggedIn()) {
         return null;
     }
-    return liff.getAccessToken();
+    return liff.getIDToken();
 };
 
 /**

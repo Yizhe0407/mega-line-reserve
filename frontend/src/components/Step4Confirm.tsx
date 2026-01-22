@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Service } from "@/types/service";
 
 export default function Step4Confirm() {
   const step1Data = useStepStore((state) => state.step1Data)
@@ -13,11 +14,11 @@ export default function Step4Confirm() {
   const step3Data = useStepStore((state) => state.step3Data)
   const services = useStepStore((state) => state.services)
 
-  const selectedServices = useMemo(() => {
+  const selectedServices = useMemo<Service[]>(() => {
     if (services.length === 0) return [];
     return (step2Data.selectServe || []).map(id => {
       return services.find(s => s.id === id);
-    }).filter(Boolean);
+    }).filter((service): service is Service => Boolean(service));
   }, [step2Data.selectServe, services]);
 
   return (

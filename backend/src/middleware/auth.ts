@@ -4,7 +4,7 @@ import * as authService from '../services/auth';
 import { AuthRequest } from '../types/express';
 
 /**
- * 提取並驗證 Bearer Token
+ * 提取並驗證 Bearer Token (id_token)
  */
 export const extractToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
@@ -14,24 +14,24 @@ export const extractToken = (req: AuthRequest, res: Response, next: NextFunction
         return;
     }
 
-    req.accessToken = authHeader.substring(7);
+    req.idToken = authHeader.substring(7);
     next();
 };
 
 
 /**
- * 驗證 LINE Access Token 並取得用戶資訊
+ * 驗證 LINE ID Token 並取得用戶資訊
  */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // 如果沒有 accessToken，先提取
-        if (!req.accessToken) {
+        // 如果沒有 idToken，先提取
+        if (!req.idToken) {
             extractToken(req, res, () => {});
-            if (!req.accessToken) return;
+            if (!req.idToken) return;
         }
 
         // 使用 service 驗證用戶
-        const user = await authService.authenticateUser(req.accessToken);
+        const user = await authService.authenticateUser(req.idToken);
 
         // 附加用戶資訊到 request
         req.user = {

@@ -2,7 +2,6 @@
 import liff from "@line/liff";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
@@ -19,7 +18,6 @@ export default function StepButtonGroup({
   const FIRST_STEP = 1;
   const TOTAL_STEP = 4;
   const router = useRouter();
-  const step1Data = useStepStore((state) => state.step1Data);
   const step2Data = useStepStore((state) => state.step2Data);
   const step3Data = useStepStore((state) => state.step3Data);
 
@@ -45,15 +43,15 @@ export default function StepButtonGroup({
     console.log(reservationTime)
     console.log(reserveData)
     try {
-      const accessToken = liff.getAccessToken();
-      if (!accessToken) {
-        throw new Error("無法取得 access token");
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        throw new Error("無法取得 ID token");
       }
       await fetch("/api/reserve", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${idToken}`,
         },
         body: JSON.stringify(reserveData),
       });

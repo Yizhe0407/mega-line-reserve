@@ -2,15 +2,28 @@ import { ApiError } from '@/types/common';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export class FetchError extends Error {
-  constructor(public status: number, message: string) {
+export class FetchError<T = unknown> extends Error {
+  public data?: T; // 保留完整的錯誤資料
+
+  constructor(public status: number, message: string, data?: T) {
     super(message);
     this.name = 'FetchError';
+    this.data = data;
   }
 }
 
 interface FetchOptions extends RequestInit {
   token?: string;
+}
+
+function extractHtmlErrorMessage(html: string, fallback: string): string {
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch?.[1]) {
+    return titleMatch[1].trim();
+  }
+
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text ? text.slice(0, 200) : fallback;
 }
 
 /**
@@ -35,10 +48,33 @@ async function fetchWrapper<T>(
 
   // 處理錯誤回應
   if (!response.ok) {
-    const errorData: ApiError = await response.json().catch(() => ({
-      error: '未知錯誤',
-    }));
-    throw new FetchError(response.status, errorData.error);
+    const contentType = response.headers.get('content-type') || '';
+    let errorData: ApiError = { error: '未知錯誤' };
+
+    try {
+      if (contentType.includes('application/json')) {
+        errorData = (await response.json()) as ApiError;
+      } else {
+        const text = await response.text();
+        if (contentType.includes('text/html')) {
+          const fallback = response.statusText || `HTTP ${response.status}`;
+          errorData = { error: extractHtmlErrorMessage(text, fallback) };
+        } else {
+          const trimmed = text.trim();
+          errorData = { error: trimmed ? trimmed.slice(0, 200) : '未知錯誤' };
+        }
+      }
+    } catch {
+      errorData = { error: '未知錯誤' };
+    }
+
+    const message = errorData.error || `HTTP ${response.status}`;
+    throw new FetchError(response.status, message, {
+      ...errorData,
+      status: response.status,
+      statusText: response.statusText,
+      url: `${API_URL}${endpoint}`,
+    });
   }
 
   return response.json();

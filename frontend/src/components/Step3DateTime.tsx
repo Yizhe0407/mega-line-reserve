@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data)
   const setStep3Data = useStepStore((state) => state.setStep3Data)
-  const [existTime, setExistTime] = useState([]);
+  const [existTime, setExistTime] = useState<[string, string][]>([]);
 
   const TIME_SLOTS = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "13:00", "14:00", "15:00"]
 
@@ -29,10 +29,10 @@ export default function Step3DateTime() {
             'Authorization': `Bearer ${idToken}`,
           },
         });
-        const data = await response.json();
-        const time = data.map(item => {
-            const d = new Date(item.reservationTime);
-            return [format(d, 'yyyy-MM-dd'), format(d, 'HH:mm')];
+        const data: { reservationTime: string }[] = await response.json();
+        const time: [string, string][] = data.map((item) => {
+          const d = new Date(item.reservationTime);
+          return [format(d, 'yyyy-MM-dd'), format(d, 'HH:mm')] as [string, string];
         });
         setExistTime(time);
       } catch (error) {

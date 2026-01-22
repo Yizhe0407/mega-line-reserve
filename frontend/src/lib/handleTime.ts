@@ -1,4 +1,9 @@
-export function getExistTime(items) {
+interface ExistingTimeItem {
+  date: string;
+  time: string;
+}
+
+export function getExistTime(items: ExistingTimeItem[]): [string, string][] {
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -6,10 +11,10 @@ export function getExistTime(items) {
   const todayStr = `${yyyy}-${mm}-${dd}`; // 例如 "2025-06-27"
 
   const filtered = items.filter(item => item.date >= todayStr);
-  return filtered.map(item => [item.date, item.time]);
+  return filtered.map(item => [item.date, item.time] as [string, string]);
 }
 
-export function isPastTime(selectedDate, slotTime) {
+export function isPastTime(selectedDate: string, slotTime: string): boolean {
   // 判斷是否為今天
   const today = new Date();
   const yyyy = today.getFullYear();

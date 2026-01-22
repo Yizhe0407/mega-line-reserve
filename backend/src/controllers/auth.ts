@@ -9,8 +9,8 @@ import { AuthRequest } from '../types/express';
 export const login = (req: AuthRequest, res: Response, next: NextFunction): void => {
     const { phone, license } = req.body;
 
-    // 呼叫 service 處理業務邏輯（accessToken 已由 middleware 驗證並提取）
-    authService.loginOrRegister(req.accessToken!, phone, license)
+    // 呼叫 service 處理業務邏輯（idToken 已由 middleware 驗證並提取）
+    authService.loginOrRegister(req.idToken!, phone, license)
         .then((user) => {
             res.json({
                 message: '登入成功',

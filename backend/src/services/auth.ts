@@ -4,68 +4,53 @@ import { UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../types/user';
 import { NewUserError, ValidationError, AuthenticationError } from '../types/errors';
 
-// LINE Token 驗證回應介面
-interface LineTokenVerifyResponse {
-    scope: string;
-    client_id: string;
-    expires_in: number;
-}
-
-// LINE Profile 回應介面
-interface LineProfileResponse {
-    userId: string;
-    displayName: string;
-    pictureUrl?: string;
+// LINE ID Token 驗證回應介面
+interface LineIdTokenVerifyResponse {
+    iss: string;
+    sub: string;
+    aud: string;
+    exp: number;
+    iat: number;
+    amr?: string[];
+    name?: string;
+    picture?: string;
+    email?: string;
 }
 
 /**
- * 驗證 LINE Access Token
+ * 驗證 LINE ID Token
  */
-export const verifyLineToken = async (accessToken: string): Promise<LineTokenVerifyResponse> => {
-    if (!accessToken || accessToken.trim() === '') {
-        throw new AuthenticationError('Access token 不能為空');
+export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerifyResponse> => {
+    if (!idToken || idToken.trim() === '') {
+        throw new AuthenticationError('ID token 不能為空');
+    }
+
+    const lineChannelId = process.env.LINE_CHANNEL_ID;
+    if (!lineChannelId || lineChannelId.trim() === '') {
+        throw new AuthenticationError('LINE_CHANNEL_ID 未設定，無法驗證 ID token');
     }
 
     try {
-        const response = await axios.post<LineTokenVerifyResponse>(
+        console.log('[DEBUG] Verifying LINE id_token...');
+        console.log('[DEBUG] Token (first 20 chars):', idToken.substring(0, 20) + '...');
+
+        const response = await axios.post<LineIdTokenVerifyResponse>(
             'https://api.line.me/oauth2/v2.1/verify',
-            new URLSearchParams({ access_token: accessToken }),
+            new URLSearchParams({ id_token: idToken, client_id: lineChannelId }),
             { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
 
-        // 檢查 channel ID 是否正確
-        const lineChannelId = process.env.LINE_CHANNEL_ID;
-        if (lineChannelId && response.data.client_id !== lineChannelId) {
+        console.log('[DEBUG] LINE API response:', response.data);
+
+        if (response.data.aud && response.data.aud !== lineChannelId) {
             throw new AuthenticationError('無效的 token - Channel ID 不符');
         }
 
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
+            console.log('[DEBUG] LINE API error response:', error.response?.data);
             throw new AuthenticationError('Token 已過期或無效');
-        }
-        throw error;
-    }
-};
-
-/**
- * 取得 LINE 用戶 Profile
- */
-export const getLineProfile = async (accessToken: string): Promise<LineProfileResponse> => {
-    if (!accessToken || accessToken.trim() === '') {
-        throw new AuthenticationError('Access token 不能為空');
-    }
-
-    try {
-        const response = await axios.get<LineProfileResponse>(
-            'https://api.line.me/v2/profile',
-            { headers: { 'Authorization': `Bearer ${accessToken}` } }
-        );
-
-        return response.data;
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-            throw new AuthenticationError('Token 無效或已過期');
         }
         throw error;
     }
@@ -75,16 +60,17 @@ export const getLineProfile = async (accessToken: string): Promise<LineProfileRe
  * 登入或註冊用戶
  */
 export const loginOrRegister = async (
-    accessToken: string,
+    idToken: string,
     phone?: string,
     license?: string
 ) => {
-    // 驗證 token
-    await verifyLineToken(accessToken);
-
-    // 取得 LINE profile
-    const profile = await getLineProfile(accessToken);
-    const { userId: lineId, displayName, pictureUrl } = profile;
+    // 使用 id_token 取得使用者資訊
+    console.log('[DEBUG] Verifying LINE id_token...');
+    const tokenInfo = await verifyLineToken(idToken);
+    const lineId = tokenInfo.sub;
+    const displayName = tokenInfo.name || '';
+    const pictureUrl = tokenInfo.picture || '';
+    console.log('[DEBUG] LINE token verified:', { lineId, displayName });
 
     // 查詢用戶是否存在
     let user = await userModel.findUserByLineId(lineId);
@@ -113,7 +99,7 @@ export const loginOrRegister = async (
         const userData: CreateUserDTO = {
             lineId,
             name: displayName,
-            pictureUrl: pictureUrl || '',
+            pictureUrl,
             phone,
             license: license || '',
             role: UserRole.CUSTOMER,
@@ -128,13 +114,10 @@ export const loginOrRegister = async (
 /**
  * 驗證用戶並取得用戶資訊（用於 middleware）
  */
-export const authenticateUser = async (accessToken: string) => {
-    // 驗證 token
-    await verifyLineToken(accessToken);
-
-    // 取得 LINE profile
-    const profile = await getLineProfile(accessToken);
-    const { userId: lineId } = profile;
+export const authenticateUser = async (idToken: string) => {
+    // 取得 LINE id_token 資訊（同時驗證 token）
+    const tokenInfo = await verifyLineToken(idToken);
+    const lineId = tokenInfo.sub;
 
     // 查詢用戶
     const user = await userModel.findUserByLineId(lineId);

@@ -7,8 +7,8 @@ export type ControllerHandler = (
     next: NextFunction
 ) => Promise<void> | void;
 
-// 擴展的 Request，包含 user 和 accessToken 屬性
+// 擴展的 Request，包含 user 和 idToken 屬性
 export interface AuthRequest extends Request {
     user?: UserProfile;
-    accessToken?: string;
+    idToken?: string;
 }
