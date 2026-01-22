@@ -1,43 +1,37 @@
-import { useState, useEffect } from "react";
+import useSWR from "swr";
 import liff from "@line/liff";
 import { ensureLiffInit } from "@/lib/liff";
 import { getMe } from "@/lib/api/endpoints/auth";
 
 export function useAdminAuth() {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [idToken, setIdToken] = useState<string | null>(null);
+  const { data, error, isLoading } = useSWR(
+    "admin-auth",
+    async () => {
+      await ensureLiffInit({ withLoginOnExternalBrowser: true });
 
-  useEffect(() => {
-    const init = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        await ensureLiffInit({ withLoginOnExternalBrowser: true });
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
-          return;
-        }
-
-        const token = liff.getIDToken();
-        if (!token) {
-          setError("無法取得 ID token");
-          return;
-        }
-
-        setIdToken(token);
-        const me = await getMe(token);
-        setIsAdmin(me.user.role === "ADMIN");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "載入失敗");
-      } finally {
-        setIsLoading(false);
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: window.location.href });
+        return { isAdmin: null as boolean | null, idToken: null as string | null };
       }
-    };
 
-    init();
-  }, []);
+      const token = liff.getIDToken();
+      if (!token) {
+        throw new Error("無法取得 ID token");
+      }
 
-  return { isAdmin, isLoading, error, idToken };
+      const me = await getMe(token);
+      return { isAdmin: me.user.role === "ADMIN", idToken: token };
+    },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+    }
+  );
+
+  return {
+    isAdmin: data?.isAdmin ?? null,
+    idToken: data?.idToken ?? null,
+    isLoading,
+    error: error instanceof Error ? error.message : null,
+  };
 }
