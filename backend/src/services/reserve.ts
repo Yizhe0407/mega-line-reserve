@@ -1,0 +1,182 @@
+import * as reserveModel from "../model/reserve";
+import * as timeSlotModel from "../model/timeSlot";
+import * as serviceModel from "../model/service";
+import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
+import { ValidationError, NotFoundError } from "../types/errors";
+import { UserRole } from "@prisma/client";
+
+const validateServiceIds = async (serviceIds: number[]) => {
+    if (!serviceIds || serviceIds.length === 0) {
+        throw new ValidationError("請至少選擇一個服務");
+    }
+
+    const uniqueIds = Array.from(new Set(serviceIds));
+    const services = await serviceModel.getActiveServicesByIds(uniqueIds);
+    if (services.length !== uniqueIds.length) {
+        throw new ValidationError("包含不存在或已停用的服務");
+    }
+
+    return uniqueIds;
+};
+
+// 取得預約列表 (根據權限範圍)
+export const getReserves = async (user: { id: number, role: UserRole }) => {
+    if (user.role === UserRole.ADMIN) {
+        return reserveModel.getAllReserves();
+    }
+    return reserveModel.getReservesByUserId(user.id);
+};
+
+// 取得單一預約
+export const getReserveById = async (idParam: string | string[], currentUserId: number, role: UserRole) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+    if (isNaN(id)) {
+        throw new ValidationError("無效的預約 ID");
+    }
+
+    const reserve = await reserveModel.getReserveById(id);
+    if (!reserve) {
+        throw new NotFoundError("找不到此預約");
+    }
+
+    // 權限檢查：Customer 只能看自己的預約
+    if (role === UserRole.CUSTOMER && reserve.userId !== currentUserId) {
+        throw new ValidationError("您無權查看此預約");
+    }
+
+    return reserve;
+};
+
+// 建立預約
+export const createReserve = async (userId: number, data: CreateReserveDTO) => {
+    // 1. 驗證資料
+    if (!data.timeSlotId) {
+        throw new ValidationError("請選擇預約時段");
+    }
+
+    if (!data.date || isNaN(Date.parse(data.date))) {
+        throw new ValidationError("無效的預約日期");
+    }
+
+    if (!data.license || data.license.trim() === "") {
+        throw new ValidationError("請提供車牌號碼");
+    }
+
+    const [timeSlot, validServiceIds, reserveCount] = await Promise.all([
+        timeSlotModel.getTimeSlotById(data.timeSlotId),
+        validateServiceIds(data.serviceIds),
+        reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date),
+    ]);
+
+    if (!timeSlot || !timeSlot.isActive) {
+        throw new ValidationError("預約時段不存在或已停用");
+    }
+
+    const capacity = timeSlot.capacity ?? 1;
+    if (reserveCount >= capacity) {
+        throw new ValidationError("此時段已額滿");
+    }
+
+    // 2. 建立預約
+    return reserveModel.createReserve(userId, {
+        ...data,
+        serviceIds: validServiceIds
+    });
+};
+
+// 更新預約 (管理員變更狀態或備註)
+export const updateReserve = async (
+    idParam: string | string[], 
+    data: UpdateReserveDTO, 
+    currentUserId: number, 
+    role: UserRole
+) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+    if (isNaN(id)) {
+        throw new ValidationError("無效的預約 ID");
+    }
+
+    const existingReserve = await reserveModel.getReserveById(id);
+    if (!existingReserve) {
+        throw new NotFoundError("找不到此預約");
+    }
+
+    // 權限檢查：Customer 只能修改自己的預約
+    if (role === UserRole.CUSTOMER && existingReserve.userId !== currentUserId) {
+        throw new ValidationError("您無權修改此預約");
+    }
+
+    const updatePayload: UpdateReserveDTO = { ...data };
+
+    if (role === UserRole.CUSTOMER) {
+        delete updatePayload.status;
+        delete updatePayload.adminMemo;
+        delete updatePayload.license;
+    }
+
+    if (updatePayload.date && isNaN(Date.parse(updatePayload.date))) {
+        throw new ValidationError("無效的預約日期");
+    }
+
+    const validateServiceIdsPromise = updatePayload.serviceIds
+        ? validateServiceIds(updatePayload.serviceIds)
+        : undefined;
+
+    // 檢查日期或時段是否變更
+    const isTimeChanged = updatePayload.timeSlotId || updatePayload.date;
+    
+    if (isTimeChanged) {
+        const newTimeSlotId = updatePayload.timeSlotId ?? existingReserve.timeSlotId;
+        const newDateStr = updatePayload.date ?? existingReserve.date.toISOString().split('T')[0];
+        const existingDateTime = existingReserve.date.getTime();
+
+        // 檢查新時段是否存在/啟用（僅當有時間相關變更）
+        const timeSlot = await timeSlotModel.getTimeSlotById(newTimeSlotId);
+        if (!timeSlot || !timeSlot.isActive) {
+            throw new ValidationError("預約時段不存在或已停用");
+        }
+
+        // 檢查新時段是否額滿 (如果是改到不同時段或不同天)
+        // 注意：如果只是改服務(沒改時間)，不會進這裡
+        const isTimeActuallyChanged =
+            newTimeSlotId !== existingReserve.timeSlotId ||
+            (updatePayload.date && new Date(updatePayload.date).getTime() !== existingDateTime);
+
+        if (isTimeActuallyChanged) {
+            const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(
+                newTimeSlotId,
+                newDateStr
+            );
+            const capacity = timeSlot.capacity ?? 1;
+
+            if (reserveCount >= capacity) {
+                throw new ValidationError("該時段已額滿");
+            }
+        }
+    }
+
+    if (validateServiceIdsPromise) {
+        updatePayload.serviceIds = await validateServiceIdsPromise;
+    }
+
+    return reserveModel.updateReserve(id, updatePayload);
+};
+
+// 刪除預約
+export const deleteReserve = async (idParam: string | string[], currentUserId: number, role: UserRole) => {
+    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
+    if (isNaN(id)) {
+        throw new ValidationError("無效的預約 ID");
+    }
+
+    const existingReserve = await reserveModel.getReserveById(id);
+    if (!existingReserve) {
+        throw new NotFoundError("找不到此預約");
+    }
+
+    if (role === UserRole.CUSTOMER && existingReserve.userId !== currentUserId) {
+        throw new ValidationError("您無權刪除此預約");
+    }
+
+    return reserveModel.deleteReserve(id);
+};

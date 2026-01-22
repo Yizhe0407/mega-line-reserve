@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReserveStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  lineId     String   @unique
+  name       String?
+  pictureUrl String?
+  phone      String   @unique
+  license    String?
+  role       UserRole @default(CUSTOMER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves Reserve[]
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  price       Decimal? @db.Decimal(10, 2)
+  duration    Int? // 分鐘
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves ServicesOnReserves[]
+
+  @@index([isActive])
+}
+
+model Reserve {
+  id         Int           @id @default(autoincrement())
+  userId     Int
+  timeSlotId Int
+  license    String
+  status     ReserveStatus @default(PENDING)
+  date       DateTime      @db.Date
+  isPickup   Boolean       @default(false)
+
+  userMemo  String?
+  adminMemo String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User                 @relation(fields: [userId], references: [id])
+  timeSlot TimeSlot             @relation(fields: [timeSlotId], references: [id])
+  services ServicesOnReserves[]
+
+  @@index([timeSlotId])
+  @@index([status])
+  @@index([userId, date])
+  @@index([timeSlotId, date, status])
+  @@index([timeSlotId, status])
+  @@index([userId, status])
+  @@index([date, status])
+}
+
+model TimeSlot {
+  id        Int     @id @default(autoincrement())
+  dayOfWeek Int // 0-6 (0=週日, 1=週一, ..., 6=週六)
+  startTime String // 時間格式 "HH:mm" (例如 "08:00", "13:30")
+  capacity  Int     @default(1)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves Reserve[]
+
+  @@unique([dayOfWeek, startTime])
+  @@index([dayOfWeek])
+  @@index([isActive])
+}
+
+model ServicesOnReserves {
+  reserveId Int
+  serviceId Int
+  reserve   Reserve @relation(fields: [reserveId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  assignedAt DateTime @default(now())
+
+  @@id([reserveId, serviceId])
+  @@index([serviceId])
+}
