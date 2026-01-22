@@ -10,11 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock, Pencil } from 'lucide-react';
 import Link from 'next/link';
-import type { Reserve } from '@/types';
-import type { Service } from '@/types';
+import type { Reserve, Service } from '@/types';
 import EditReservationDialog from '@/components/EditReservationDialog';
 import { toast } from 'react-hot-toast';
 import { useLiffMessage } from '@/hooks/useLiffMessage';
+import { format } from 'date-fns';
 
 interface ReserveServiceItem {
   service: Service;
@@ -36,10 +36,33 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
   const startTime = reserve.timeSlot?.startTime ?? '00:00';
   const weekdayName = WEEKDAYS[dayOfWeek];
   
-  const isPast = false; 
-  const status = reserve.status === 'COMPLETED' || reserve.status === 'CANCELLED' ? '已完成' : '已確認';
+  /* 判斷是否過期邏輯 */
+  // now: 當前時間
+  // reserveTime: 預約時間 (日期 + 時段開始時間)
+  const now = new Date();
+  
+  // 建立預約日期物件 (假設 reserve.date 為 YYYY-MM-DD 或 ISO)
+  // 如果沒有 date (舊資料)，暫時視為不過期，或依賴 weekday 計算 (較複雜故暫略)
+  const reserveDate = reserve.date ? new Date(reserve.date) : new Date();
+  
+  // 設定時段時間
+  const [hours, minutes] = startTime.split(':').map(Number);
+  reserveDate.setHours(hours, minutes, 0, 0);
+
+  // 比較
+  // 如果是舊資料(沒date)，這邏輯可能會判斷錯誤，但新預約都有 date
+  // 若 reserve.date 是 '2025-01-01'，new Date() 會是該日 00:00 (UTC) 或 08:00 (TW) 取決於實作
+  // 這裡假設 reserve.date 雖然是 string，但 new Date(reserve.date) 在本地瀏覽器會解讀正確日期
+  // 安全起見，建議用 date-fns parse 或手動拆解
+  // 這裡簡單做：僅當 reserve.date 存在時才嚴格判斷
+  const isPast = reserve.date ? now > reserveDate : false;
+  
+  // 狀態已完成或已取消也視為不可編輯
+  const isEditable = !isPast && reserve.status !== 'CANCELLED' && reserve.status !== 'COMPLETED';
+
+  const status = reserve.status === 'COMPLETED' || reserve.status === 'CANCELLED' ? '已完成' : isPast ? '已過期' : '即將到來';
   const statusConfig = {
-    '已確認': {
+    '即將到來': {
       icon: <Clock className="h-4 w-4 mr-1.5" />,
       variant: 'default',
       className: 'bg-blue-500 text-white',
@@ -49,6 +72,11 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
       variant: 'secondary',
       className: 'bg-gray-500 text-white',
     },
+    '已過期': {
+       icon: <AlertCircle className="h-4 w-4 mr-1.5" />,
+       variant: 'secondary',
+       className: 'bg-gray-400 text-white',
+    }
   } as const;
   const currentStatus = statusConfig[status];
 
@@ -58,7 +86,7 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center">
             <Calendar className="mr-2" />
-            {reserve.date ? new Date(reserve.date as unknown as string).toLocaleDateString() : weekdayName} {startTime}
+            {reserve.date ? format(new Date(reserve.date), 'yyyy-M-d') : weekdayName} {startTime}
           </CardTitle>
           <Badge variant={currentStatus.variant} className={cn('flex items-center', currentStatus.className)}>
             {currentStatus.icon}
@@ -76,17 +104,25 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
           </ul>
         </div>
       </CardContent>
-      {!isPast && (
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" size="sm" onClick={() => onEdit(reserve)}>
-             <Pencil className="mr-2 h-4 w-4" />
-             修改
-          </Button>
-          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={() => onCancel(reserve.id)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            取消預約
-          </Button>
-        </CardFooter>
+      {reserve.status === 'PENDING' && (
+      <CardFooter className="flex justify-between">
+          {!isPast ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => onEdit(reserve)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                修改
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={() => onCancel(reserve.id)}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                取消預約
+              </Button>
+            </>
+          ) : (
+             <div className="text-sm text-muted-foreground w-full text-right">
+                預約已過期
+             </div>
+          )}
+      </CardFooter>
       )}
     </Card>
   );

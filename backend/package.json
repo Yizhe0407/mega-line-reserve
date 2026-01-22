@@ -7,6 +7,7 @@
     "dev": "prisma generate && nodemon --exec ts-node src/index.ts",
     "start": "ts-node src/index.ts",
     "build": "tsc",
+    "cron:complete": "ts-node scripts/auto-complete.ts",
     "seed": "ts-node prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
