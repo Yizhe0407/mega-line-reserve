@@ -1,7 +1,6 @@
 "use client";
 
 import toast from "react-hot-toast";
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import liff from "@line/liff";
@@ -11,20 +10,10 @@ import type { TimeSlot } from "@/types/timeSlot";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, X, Copy, Trash2 } from "lucide-react";
+import { WeeklyCalendarView } from "@/components/admin/time-slots/WeeklyCalendarView";
+import { TimeSlotDialog } from "@/components/admin/time-slots/TimeSlotDialog";
+import { CopySlotDialog } from "@/components/admin/time-slots/CopySlotDialog";
+import { DeleteConfirmDialog } from "@/components/admin/time-slots/DeleteConfirmDialog";
 
 const WEEKDAYS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
@@ -367,226 +356,59 @@ export default function TimeSlotAdminPage() {
           </Alert>
         )}
 
-        {/* 週曆視圖 */}
-        <div className="border rounded-lg overflow-hidden">
-          {/* 星期標題 */}
-          <div className="grid grid-cols-7 border-b bg-muted/50">
-            {WEEKDAYS.map((day, index) => (
-              <div
-                key={index}
-                className="p-2 text-center font-semibold border-r last:border-r-0 flex items-center justify-center gap-2"
-              >
-                <span>{day}</span>
-                {(groupedSlots[index]?.length || 0) > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => openCopyDialog(index)}
-                    title="複製此天的時段"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* 時段內容 */}
-          <div className="grid grid-cols-7">
-            {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
-              const slots = groupedSlots[dayIndex] || [];
-              return (
-                <div
-                  key={dayIndex}
-                  className="border-r last:border-r-0 min-h-[400px] p-2 space-y-2 flex flex-col"
-                >
-                  {/* 時段列表 */}
-                  <div className="flex-1 space-y-2">
-                    {slots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className={`p-2 rounded border text-xs cursor-pointer transition-colors ${
-                          slot.isActive
-                            ? "bg-primary/10 border-primary/30 hover:bg-primary/20"
-                            : "bg-muted border-muted-foreground/30 opacity-60"
-                        }`}
-                        onClick={() => openEditDialog(slot)}
-                      >
-                        <div className="font-semibold">{slot.startTime}</div>
-                        <div className="text-muted-foreground">
-                          容量: {slot.capacity}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 新增按鈕 */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => openAddDialog(dayIndex)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <WeeklyCalendarView
+          weekdays={WEEKDAYS}
+          groupedSlots={groupedSlots}
+          onAddSlot={openAddDialog}
+          onEditSlot={openEditDialog}
+          onCopyDay={openCopyDialog}
+        />
       </div>
 
-      {/* 新增/編輯 Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingSlot ? "編輯時段" : "新增時段"} - {WEEKDAYS[selectedDayOfWeek]}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                時間 {!editingSlot && dialogTimes.length > 0 && `(已選 ${dialogTimes.length} 個)`}
-              </label>
-              <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1">
-                {TIME_OPTIONS.map((time) => (
-                  <Button
-                    key={time}
-                    type="button"
-                    variant={dialogTimes.includes(time) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleTimeSelection(time)}
-                    className="h-9"
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">容量</label>
-              <Select
-                value={String(dialogCapacity)}
-                onValueChange={(v) => setDialogCapacity(Number(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem key={num} value={String(num)}>
-                      {num} 人
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleDialogSubmit} className="flex-1">
-                {editingSlot ? "儲存" : "新增"}
-              </Button>
-              {editingSlot && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => toggleActive(editingSlot)}
-                  >
-                    {editingSlot.isActive ? "停用" : "啟用"}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      openDeleteDialog(editingSlot);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TimeSlotDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        weekdays={WEEKDAYS}
+        timeOptions={TIME_OPTIONS}
+        selectedDayOfWeek={selectedDayOfWeek}
+        selectedTimes={dialogTimes}
+        capacity={dialogCapacity}
+        editingSlot={editingSlot}
+        onTimeToggle={toggleTimeSelection}
+        onCapacityChange={setDialogCapacity}
+        onSubmit={handleDialogSubmit}
+        onToggleActive={editingSlot ? () => toggleActive(editingSlot) : undefined}
+        onDelete={
+          editingSlot
+            ? () => {
+                setIsDialogOpen(false);
+                openDeleteDialog(editingSlot);
+              }
+            : undefined
+        }
+      />
 
-      {/* 複製時段 Dialog */}
-      <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              複製時段 - {WEEKDAYS[copySourceDay]}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              將 {WEEKDAYS[copySourceDay]} 的 {groupedSlots[copySourceDay]?.length || 0} 個時段複製到：
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {WEEKDAYS.map((day, index) => (
-                <Button
-                  key={index}
-                  type="button"
-                  variant={copyTargetDays.includes(index) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTargetDay(index)}
-                  disabled={index === copySourceDay}
-                  className="h-10"
-                >
-                  {day}
-                </Button>
-              ))}
-            </div>
-            <div className="text-sm text-amber-600 dark:text-amber-500">
-              ⚠️ 目標日期的所有時段將被覆蓋
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleCopySlots} className="flex-1">
-                確認複製 {copyTargetDays.length > 0 && `到 ${copyTargetDays.length} 天`}
-              </Button>
-              <Button variant="outline" onClick={() => setIsCopyDialogOpen(false)}>
-                取消
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CopySlotDialog
+        open={isCopyDialogOpen}
+        onOpenChange={setIsCopyDialogOpen}
+        weekdays={WEEKDAYS}
+        sourceDay={copySourceDay}
+        targetDays={copyTargetDays}
+        slotCount={groupedSlots[copySourceDay]?.length || 0}
+        onToggleTargetDay={toggleTargetDay}
+        onConfirm={handleCopySlots}
+      />
 
-      {/* 刪除確認 Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>確認刪除</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {slotToDelete && (
-              <div className="text-sm">
-                確定要刪除 <span className="font-semibold">{WEEKDAYS[slotToDelete.dayOfWeek]}</span> 的{" "}
-                <span className="font-semibold">{slotToDelete.startTime}</span> 時段嗎？
-              </div>
-            )}
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="destructive"
-                onClick={() => slotToDelete && handleDelete(slotToDelete.id)}
-                className="flex-1"
-              >
-                確認刪除
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsDeleteDialogOpen(false);
-                  setSlotToDelete(null);
-                }}
-              >
-                取消
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setSlotToDelete(null);
+        }}
+        slot={slotToDelete}
+        weekdays={WEEKDAYS}
+        onConfirm={() => slotToDelete && handleDelete(slotToDelete.id)}
+      />
     </div>
   );
 }
