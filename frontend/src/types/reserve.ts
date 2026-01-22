@@ -8,7 +8,12 @@ export enum ReserveStatus {
 export interface Reserve {
   id: number;
   userId: number;
-  reservationTime: string; // ISO string
+  timeSlotId: number;
+  timeSlot?: {
+    id: number;
+    dayOfWeek: number;
+    startTime: string;
+  };
   license: string;
   status: ReserveStatus;
   userMemo?: string;
@@ -18,7 +23,7 @@ export interface Reserve {
 }
 
 export interface CreateReserveDTO {
-  reservationTime: string; // ISO string
+  timeSlotId: number;
   license: string;
   serviceIds: number[];
   userMemo?: string;
@@ -27,6 +32,6 @@ export interface CreateReserveDTO {
 export interface UpdateReserveDTO {
   status?: ReserveStatus;
   adminMemo?: string;
-  reservationTime?: string;
+  timeSlotId?: number;
   license?: string;
 }

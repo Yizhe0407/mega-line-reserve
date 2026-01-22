@@ -55,11 +55,11 @@ model Service {
 }
 
 model Reserve {
-  id              Int           @id @default(autoincrement())
-  userId          Int
-  reservationTime DateTime
-  license         String
-  status          ReserveStatus @default(PENDING)
+  id         Int           @id @default(autoincrement())
+  userId     Int
+  timeSlotId Int
+  license    String
+  status     ReserveStatus @default(PENDING)
 
   userMemo  String?
   adminMemo String?
@@ -68,10 +68,27 @@ model Reserve {
   updatedAt DateTime @updatedAt
 
   user     User                 @relation(fields: [userId], references: [id])
+  timeSlot TimeSlot             @relation(fields: [timeSlotId], references: [id])
   services ServicesOnReserves[]
 
-  @@index([reservationTime])
+  @@index([timeSlotId])
   @@index([status])
+}
+
+model TimeSlot {
+  id        Int     @id @default(autoincrement())
+  dayOfWeek Int // 0-6 (0=週日, 1=週一, ..., 6=週六)
+  startTime String // 時間格式 "HH:mm" (例如 "08:00", "13:30")
+  capacity  Int     @default(1)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reserves Reserve[]
+
+  @@unique([dayOfWeek, startTime])
+  @@index([dayOfWeek])
 }
 
 model ServicesOnReserves {

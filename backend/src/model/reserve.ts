@@ -1,3 +1,4 @@
+import { ReserveStatus } from "@prisma/client";
 import { prisma } from "../config/database";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
 
@@ -6,15 +7,25 @@ export const getAllReserves = () => {
     return prisma.reserve.findMany({
         include: {
             user: true,
+            timeSlot: true,
             services: {
                 include: {
                     service: true
                 }
             }
         },
-        orderBy: {
-            reservationTime: 'desc'
-        }
+        orderBy: [
+            {
+                timeSlot: {
+                    dayOfWeek: 'asc'
+                }
+            },
+            {
+                timeSlot: {
+                    startTime: 'asc'
+                }
+            }
+        ]
     });
 };
 
@@ -23,15 +34,25 @@ export const getReservesByUserId = (userId: number) => {
     return prisma.reserve.findMany({
         where: { userId },
         include: {
+            timeSlot: true,
             services: {
                 include: {
                     service: true
                 }
             }
         },
-        orderBy: {
-            reservationTime: 'desc'
-        }
+        orderBy: [
+            {
+                timeSlot: {
+                    dayOfWeek: 'asc'
+                }
+            },
+            {
+                timeSlot: {
+                    startTime: 'asc'
+                }
+            }
+        ]
     });
 };
 
@@ -41,6 +62,7 @@ export const getReserveById = (id: number) => {
         where: { id },
         include: {
             user: true,
+            timeSlot: true,
             services: {
                 include: {
                     service: true
@@ -52,12 +74,12 @@ export const getReserveById = (id: number) => {
 
 // 建立預約
 export const createReserve = (userId: number, data: CreateReserveDTO) => {
-    const { reservationTime, license, serviceIds, userMemo } = data;
+    const { timeSlotId, license, serviceIds, userMemo } = data;
     
     return prisma.reserve.create({
         data: {
             userId,
-            reservationTime: new Date(reservationTime),
+            timeSlotId,
             license,
             userMemo,
             services: {
@@ -69,6 +91,7 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
             }
         },
         include: {
+            timeSlot: true,
             services: {
                 include: {
                     service: true
@@ -80,14 +103,14 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
 
 // 更新預約 (狀態或管理端備註)
 export const updateReserve = (id: number, data: UpdateReserveDTO) => {
-    const { status, adminMemo, reservationTime, license } = data;
+    const { status, adminMemo, license, timeSlotId } = data;
     
     return prisma.reserve.update({
         where: { id },
         data: {
             status,
             adminMemo,
-            reservationTime: reservationTime ? new Date(reservationTime) : undefined,
+            timeSlotId,
             license
         }
     });
@@ -97,5 +120,16 @@ export const updateReserve = (id: number, data: UpdateReserveDTO) => {
 export const deleteReserve = (id: number) => {
     return prisma.reserve.delete({
         where: { id }
+    });
+};
+
+export const countActiveReservesByTimeSlot = (timeSlotId: number) => {
+    return prisma.reserve.count({
+        where: {
+            timeSlotId,
+            status: {
+                not: ReserveStatus.CANCELLED
+            }
+        }
     });
 };

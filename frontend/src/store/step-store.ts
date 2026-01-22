@@ -18,6 +18,7 @@ interface Step2Data {
 interface Step3Data {
   date: string;
   time: string;
+  timeSlotId: number | null;
 }
 
 interface StepStore {
@@ -46,7 +47,7 @@ export const useStepStore = create<StepStore>((set, get) => ({
   currentStep: 1,
   step1Data: {},
   step2Data: { selectServe: [], otherService: '', extra: false, isOtherServiceSelected: false },
-  step3Data: { date: '', time: '' },
+  step3Data: { date: '', time: '', timeSlotId: null },
   userId: null,
   lineId: '',
   isLoading: false,
@@ -86,6 +87,6 @@ export const useStepStore = create<StepStore>((set, get) => ({
     set({
       currentStep: 1,
       step2Data: { selectServe: [], otherService: '', extra: false, isOtherServiceSelected: false },
-      step3Data: { date: '', time: '' }
+      step3Data: { date: '', time: '', timeSlotId: null }
     }),
 }))

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
-import { format } from "date-fns";
 
 export default function StepButtonGroup({
   isLoading = false,
@@ -18,6 +17,7 @@ export default function StepButtonGroup({
   const FIRST_STEP = 1;
   const TOTAL_STEP = 4;
   const router = useRouter();
+  const step1Data = useStepStore((state) => state.step1Data);
   const step2Data = useStepStore((state) => state.step2Data);
   const step3Data = useStepStore((state) => state.step3Data);
 
@@ -28,20 +28,14 @@ export default function StepButtonGroup({
   const nextButtonText = currentStep === TOTAL_STEP ? "確認預約" : "下一步";
 
   const send = async () => {
-    const { date, time } = step3Data;
-    const dateString = typeof date === 'string' ? date : (date ? format(date, 'yyyy-MM-dd') : '');
-    const reservationTime = new Date(`${dateString}T${time}:00`);
-
     const serviceIds = step2Data.selectServe;
 
     const reserveData = {
       serviceIds,
-      reservationTime: reservationTime.toISOString(),
-      otherService: step2Data.isOtherServiceSelected ? step2Data.otherService : null,
+      timeSlotId: step3Data.timeSlotId,
+      license: step1Data.license,
+      userMemo: step2Data.isOtherServiceSelected ? step2Data.otherService : undefined,
     };
-    console.log(step3Data)
-    console.log(reservationTime)
-    console.log(reserveData)
     try {
       const idToken = liff.getIDToken();
       if (!idToken) {

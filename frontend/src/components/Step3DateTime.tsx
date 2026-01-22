@@ -1,46 +1,54 @@
 'use client'
-import liff from "@line/liff";
 import { format } from 'date-fns'
 import ProgressBar from "./ProgressBar";
 import { zhTW } from 'date-fns/locale';
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { isPastTime } from "@/lib/handleTime"
+import { get } from "@/lib/api/core/fetch-wrapper"
 import StepButtonGroup from "./StepButtonGroup"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
 import { Calendar } from "@/components/ui/calendar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { TimeSlot } from "@/types/timeSlot"
 
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data)
   const setStep3Data = useStepStore((state) => state.setStep3Data)
-  const [existTime, setExistTime] = useState<[string, string][]>([]);
-
-  const TIME_SLOTS = ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "13:00", "14:00", "15:00"]
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
   useEffect(() => {
-    const getTime = async () => {
+    const getTimeSlots = async () => {
       try {
-        const idToken = liff.getIDToken();
-        const response = await fetch('/api/reserve/not-available-time',{
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-          },
-        });
-        const data: { reservationTime: string }[] = await response.json();
-        const time: [string, string][] = data.map((item) => {
-          const d = new Date(item.reservationTime);
-          return [format(d, 'yyyy-MM-dd'), format(d, 'HH:mm')] as [string, string];
-        });
-        setExistTime(time);
+        const data = await get<TimeSlot[]>('/api/time-slot/active');
+        // 確保回傳的是陣列
+        setTimeSlots(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching time slots:", error)
+        setTimeSlots([]); // 發生錯誤時設為空陣列
       }
     }
-    getTime()
+    getTimeSlots()
   }, [])
+
+  const filteredSlots = useMemo(() => {
+    if (!step3Data.date) return [];
+    
+    // 計算選擇日期是星期幾 (0=週日, 1=週一, ..., 6=週六)
+    const selectedDate = new Date(step3Data.date);
+    const dayOfWeek = selectedDate.getDay();
+    
+    // 篩選該星期的時段
+    return timeSlots
+      .filter((slot) => slot.dayOfWeek === dayOfWeek)
+      .map((slot) => ({
+        ...slot,
+        date: step3Data.date,
+        timeLabel: slot.startTime,
+      }))
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [step3Data.date, timeSlots]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -61,6 +69,7 @@ export default function Step3DateTime() {
                   setStep3Data({
                     date: day ? format(day, 'yyyy-MM-dd') : "",
                     time: "", // 清除時間選擇
+                    timeSlotId: null,
                   })
                 }}
                 disabled={(date) => date < new Date(new Date().toDateString()) || date.getDay() === 0}
@@ -76,25 +85,37 @@ export default function Step3DateTime() {
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-3">
-                {TIME_SLOTS.map((time) => (
-                  <Button
-                    disabled={
-                      !step3Data.date ||  // 尚未選擇日期時，按鈕不可點
-                      existTime.some(([date, t]) => date === step3Data.date && t === time) || // 如果這個時段已經被預約，不可點
-                      isPastTime(step3Data.date, time)  // 如果選的是今天，且這個時段已經過了，不可點
-                    }
-                    key={time}
-                    variant={step3Data.time === time ? "default" : "outline"}
-                    onClick={() =>
-                      setStep3Data({
-                        time,
-                      })
-                    }
-                    className="h-12 text-sm"
-                  >
-                    {time}
-                  </Button>
-                ))}
+                {filteredSlots.map((slot) => {
+                  const reserveCount = slot._count?.reserves ?? 0;
+                  const isFull = reserveCount >= slot.capacity;
+                  
+                  return (
+                    <Button
+                      disabled={
+                        !step3Data.date ||  // 尚未選擇日期時，按鈕不可點
+                        isPastTime(step3Data.date, slot.timeLabel) ||  // 如果選的是今天，且這個時段已經過了，不可點
+                        isFull  // 時段已額滿
+                      }
+                      key={slot.id}
+                      variant={step3Data.timeSlotId === slot.id ? "default" : "outline"}
+                      onClick={() =>
+                        setStep3Data({
+                          time: slot.timeLabel,
+                          timeSlotId: slot.id,
+                        })
+                      }
+                      className="h-12 text-sm"
+                    >
+                      {slot.timeLabel}
+                      {isFull && <span className="ml-1 text-xs">(額滿)</span>}
+                    </Button>
+                  );
+                })}
+                {filteredSlots.length === 0 && (
+                  <div className="col-span-3 text-center py-6 text-[#a3a3a3]">
+                    <p className="text-sm">當天沒有可預約時段</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -102,7 +123,7 @@ export default function Step3DateTime() {
       </div>
 
       <StepButtonGroup
-        isNextDisabled={!step3Data.date || !step3Data.time}
+        isNextDisabled={!step3Data.date || !step3Data.timeSlotId}
       />
     </div>
   )

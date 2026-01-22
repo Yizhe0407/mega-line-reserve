@@ -98,7 +98,7 @@ export default function Step4Confirm() {
         </Card>
       </div>
 
-      <StepButtonGroup isNextDisabled={!step3Data.date || !step3Data.time} />
+      <StepButtonGroup isNextDisabled={!step3Data.date || !step3Data.timeSlotId} />
     </div>
   )
 }

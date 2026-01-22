@@ -26,8 +26,7 @@ cp .env.example .env
 
 ```bash
 docker compose -f docker-compose.dev.yml down -v
-docker compose -f docker-compose.dev.yml build --no-cache
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d --build
 
 
 # 啟動開發環境

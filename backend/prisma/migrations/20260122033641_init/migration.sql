@@ -34,7 +34,7 @@ CREATE TABLE `Service` (
 CREATE TABLE `Reserve` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NOT NULL,
-    `reservationTime` DATETIME(3) NOT NULL,
+    `timeSlotId` INTEGER NOT NULL,
     `license` VARCHAR(191) NOT NULL,
     `status` ENUM('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
     `userMemo` VARCHAR(191) NULL,
@@ -42,8 +42,23 @@ CREATE TABLE `Reserve` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
-    INDEX `Reserve_reservationTime_idx`(`reservationTime`),
+    INDEX `Reserve_timeSlotId_idx`(`timeSlotId`),
     INDEX `Reserve_status_idx`(`status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TimeSlot` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `dayOfWeek` INTEGER NOT NULL,
+    `startTime` VARCHAR(191) NOT NULL,
+    `capacity` INTEGER NOT NULL DEFAULT 1,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `TimeSlot_dayOfWeek_idx`(`dayOfWeek`),
+    UNIQUE INDEX `TimeSlot_dayOfWeek_startTime_key`(`dayOfWeek`, `startTime`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -58,6 +73,9 @@ CREATE TABLE `ServicesOnReserves` (
 
 -- AddForeignKey
 ALTER TABLE `Reserve` ADD CONSTRAINT `Reserve_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Reserve` ADD CONSTRAINT `Reserve_timeSlotId_fkey` FOREIGN KEY (`timeSlotId`) REFERENCES `TimeSlot`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `ServicesOnReserves` ADD CONSTRAINT `ServicesOnReserves_reserveId_fkey` FOREIGN KEY (`reserveId`) REFERENCES `Reserve`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

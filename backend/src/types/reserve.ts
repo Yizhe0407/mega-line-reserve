@@ -3,7 +3,7 @@ import { ReserveStatus } from "@prisma/client";
 export interface Reserve {
     id: number;
     userId: number;
-    reservationTime: Date;
+    timeSlotId: number;
     license: string;
     status: ReserveStatus;
     userMemo?: string;
@@ -13,7 +13,7 @@ export interface Reserve {
 }
 
 export interface CreateReserveDTO {
-    reservationTime: string | Date; // ISO string from frontend
+    timeSlotId: number;
     license: string;
     serviceIds: number[];
     userMemo?: string;
@@ -22,6 +22,6 @@ export interface CreateReserveDTO {
 export interface UpdateReserveDTO {
     status?: ReserveStatus;
     adminMemo?: string;
-    reservationTime?: string | Date;
+    timeSlotId?: number;
     license?: string;
 }

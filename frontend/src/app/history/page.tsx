@@ -28,9 +28,16 @@ interface ReservationCardProps {
 }
 
 const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
-  const reservationDate = new Date(reserve.reservationTime);
-  const isPast = reservationDate < new Date();
-  const status = isPast ? '已完成' : '已確認';
+  // 由於時段改為星期制，我們需要從其他資訊推斷完整日期
+  // 這裡使用 createdAt 作為參考日期（實際應該有預約日期欄位）
+  const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+  const dayOfWeek = reserve.timeSlot?.dayOfWeek ?? 0;
+  const startTime = reserve.timeSlot?.startTime ?? '00:00';
+  const weekdayName = WEEKDAYS[dayOfWeek];
+  
+  // TODO: 未來應該在 Reserve 模型加入實際預約日期欄位
+  const isPast = false; // 暫時無法判斷是否過期
+  const status = reserve.status === 'COMPLETED' || reserve.status === 'CANCELLED' ? '已完成' : '已確認';
   const statusConfig = {
     '已確認': {
       icon: <Clock className="h-4 w-4 mr-1.5" />,
@@ -51,7 +58,7 @@ const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center">
             <Calendar className="mr-2" />
-            {format(reservationDate, 'yyyy/MM/dd HH:mm')}
+            {weekdayName} {startTime}
           </CardTitle>
           <Badge variant={currentStatus.variant} className={cn('flex items-center', currentStatus.className)}>
             {currentStatus.icon}
@@ -105,10 +112,18 @@ export default function RecordPage() {
         }
 
         const data = await response.json();
-        // Sort reservations by date in descending order
+        // Sort by dayOfWeek and startTime
         const sortedData = data.sort(
-          (a: ReserveWithServices, b: ReserveWithServices) =>
-            new Date(b.reservationTime).getTime() - new Date(a.reservationTime).getTime(),
+          (a: ReserveWithServices, b: ReserveWithServices) => {
+            const aDayOfWeek = a.timeSlot?.dayOfWeek ?? 0;
+            const bDayOfWeek = b.timeSlot?.dayOfWeek ?? 0;
+            if (aDayOfWeek !== bDayOfWeek) {
+              return aDayOfWeek - bDayOfWeek;
+            }
+            const aTime = a.timeSlot?.startTime ?? '';
+            const bTime = b.timeSlot?.startTime ?? '';
+            return aTime.localeCompare(bTime);
+          },
         );
         setReservations(sortedData);
       } catch (err) {

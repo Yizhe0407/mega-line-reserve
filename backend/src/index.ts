@@ -5,6 +5,7 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import { router as serviceRoutes } from './routes/service';
 import { router as reserveRoutes } from './routes/reserve';
+import { router as timeSlotRoutes } from './routes/timeSlot';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -53,6 +54,9 @@ app.use('/api/service', serviceRoutes);
 
 // Reserve routes
 app.use('/api/reserve', reserveRoutes);
+
+// Time slot routes
+app.use('/api/time-slot', timeSlotRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
