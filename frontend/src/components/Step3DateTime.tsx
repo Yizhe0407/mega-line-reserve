@@ -1,6 +1,5 @@
 'use client'
 import { format } from 'date-fns'
-import ProgressBar from "./ProgressBar";
 import { zhTW } from 'date-fns/locale';
 import { useState, useEffect, useMemo } from "react"
 import { isPastTime } from "@/lib/handleTime"
@@ -51,9 +50,7 @@ export default function Step3DateTime() {
   }, [step3Data.date, timeSlots]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <ProgressBar />
-
+    <>
       <div className="px-4 pt-20">
         <Card>
           <CardHeader>
@@ -125,6 +122,6 @@ export default function Step3DateTime() {
       <StepButtonGroup
         isNextDisabled={!step3Data.date || !step3Data.timeSlotId}
       />
-    </div>
+    </>
   )
 }

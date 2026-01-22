@@ -1,5 +1,4 @@
 import { Loader2 } from "lucide-react";
-import ProgressBar from "./ProgressBar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
@@ -15,9 +14,7 @@ export default function Step1UserInfo() {
   const { fetchUserData } = useStepUserData();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <ProgressBar />
-
+    <>
       <div className="px-4 pt-20">
         <Card>
           <CardHeader>
@@ -70,6 +67,6 @@ export default function Step1UserInfo() {
       <StepButtonGroup
         isNextDisabled={!step1Data?.name || !step1Data?.license}
       />
-    </div>
+    </>
   );
 }

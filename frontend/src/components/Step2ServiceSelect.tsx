@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from "react"
-import ProgressBar from "./ProgressBar";
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -48,9 +47,7 @@ export default function Step2ServiceSelect() {
   const otherServiceId = services.find((s: Service) => s.name === '其他')?.id;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <ProgressBar />
-
+    <>
       <div className="px-4 pt-20">
         <Card>
           <CardHeader>
@@ -126,6 +123,6 @@ export default function Step2ServiceSelect() {
       </div>
 
       <StepButtonGroup isNextDisabled={!step2Data?.selectServe || step2Data.selectServe.length === 0} />
-    </div>
+    </>
   )
 }

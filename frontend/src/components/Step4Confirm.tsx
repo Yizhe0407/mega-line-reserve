@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import ProgressBar from "./ProgressBar";
 import { useStepStore } from "@/store/step-store"
 import StepButtonGroup from "./StepButtonGroup";
 import { Separator } from "@/components/ui/separator"
@@ -22,9 +21,7 @@ export default function Step4Confirm() {
   }, [step2Data.selectServe, services]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <ProgressBar />
-
+    <>
       <div className="px-4 pt-20">
         <Card>
           <CardHeader>
@@ -99,6 +96,6 @@ export default function Step4Confirm() {
       </div>
 
       <StepButtonGroup isNextDisabled={!step3Data.date || !step3Data.timeSlotId} />
-    </div>
+    </>
   )
 }
