@@ -4,12 +4,12 @@ LINE 預約系統
 
 ## 技術架構
 
-| 服務 | 技術 | Port |
-|------|------|------|
-| Frontend | Next.js | 3000 |
-| Backend | Hono.js + Bun | 3001 |
-| Database | MySQL 8.0 | 3306 |
-| DB Admin | phpMyAdmin | 8080 |
+| 服務     | 技術          | Port |
+| -------- | ------------- | ---- |
+| Frontend | Next.js       | 3000 |
+| Backend  | Hono.js + Bun | 3001 |
+| Database | MySQL 8.0     | 3306 |
+| DB Admin | phpMyAdmin    | 8080 |
 
 ## 環境設定
 
@@ -60,13 +60,28 @@ docker compose down
 docker compose down -v
 ```
 
+### 正式部署注意事項 (Database Initialization)
+
+在正式環境部署時，系統**不會自動執行**資料庫遷移 (Migration) 與填充 (Seed)。若為首次部署或需要更新資料庫，請手動執行：
+
+```bash
+# 1. 進入後端容器
+docker exec -it mega-line-reserve-backend sh
+
+# 2. 執行 Migration (建立資料表)
+npx prisma migrate deploy
+
+# 3. 執行 Seed (選擇性：填充預設資料)
+npx prisma db seed
+```
+
 ## 服務存取
 
-| 服務 | URL |
-|------|-----|
-| Frontend | http://localhost:3000 |
+| 服務        | URL                   |
+| ----------- | --------------------- |
+| Frontend    | http://localhost:3000 |
 | Backend API | http://localhost:3001 |
-| phpMyAdmin | http://localhost:8080 |
+| phpMyAdmin  | http://localhost:8080 |
 
 ## 專案結構
 
