@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
+import * as api from "@/lib/api";
 
 export default function StepButtonGroup({
   isLoading = false,
@@ -32,8 +33,8 @@ export default function StepButtonGroup({
 
     const reserveData = {
       serviceIds,
-      timeSlotId: step3Data.timeSlotId,
-      license: step1Data.license,
+      timeSlotId: step3Data.timeSlotId!,
+      license: step1Data.license!,
       userMemo: step2Data.isOtherServiceSelected ? step2Data.otherService : undefined,
     };
     try {
@@ -41,14 +42,7 @@ export default function StepButtonGroup({
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await fetch("/api/reserve", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(reserveData),
-      });
+      await api.reserve.createReserve(reserveData, idToken);
     } catch (error) {
       console.error("Error during send:", error);
     }
