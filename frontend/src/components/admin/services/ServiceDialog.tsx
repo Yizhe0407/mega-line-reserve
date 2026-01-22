@@ -58,7 +58,7 @@ export function ServiceDialog({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">服務描述</Label>
+          <Label htmlFor="description">服務描述 (選填)</Label>
           <Textarea
             id="description"
             value={description}
@@ -70,7 +70,7 @@ export function ServiceDialog({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="price">價格 (NT$)</Label>
+            <Label htmlFor="price">價格 (NT$) (選填)</Label>
             <Input
               id="price"
               type="number"
@@ -85,7 +85,7 @@ export function ServiceDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="duration">時長 (分鐘)</Label>
+            <Label htmlFor="duration">時長 (分鐘) (選填)</Label>
             <Input
               id="duration"
               type="number"

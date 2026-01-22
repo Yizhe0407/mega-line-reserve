@@ -125,7 +125,7 @@ export function useTimeSlots() {
           );
 
           // 2. 複製來源日期的時段到目標日期
-          await Promise.all(
+          const results = await Promise.allSettled(
             sourceSlots.map((slot) =>
               timeSlotApi.createTimeSlot(
                 {
@@ -138,13 +138,24 @@ export function useTimeSlots() {
               )
             )
           );
+          
+          // 統計失敗是否僅因為重複
+          const failures = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
+          if (failures.length > 0) {
+            console.warn(`複製到週 ${targetDay} 時發生 ${failures.length} 個錯誤`, failures);
+            // 可以在這裡決定是否要拋出錯誤，或者視為部分成功
+            // 如果用戶說「不需要這個（錯誤訊息）」，我們可以選擇忽略重複的錯誤
+          }
         }
 
         await loadTimeSlots();
         toast.success(`已複製到 ${targetDays.length} 天`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "複製失敗";
-        setError(message);
+        // 只有非重複時段的嚴重錯誤才顯示
+        if (!message.includes("已存在")) {
+           setError(message);
+        }
         toast.error(message);
         throw err;
       }

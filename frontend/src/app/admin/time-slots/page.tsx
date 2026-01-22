@@ -99,7 +99,10 @@ export default function TimeSlotAdminPage() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "操作失敗";
-      setSlotsError(message);
+      // 忽略已存在的錯誤，只顯示 toast
+      if (!message.includes("已存在")) {
+        setSlotsError(message);
+      }
       toast.error(message);
     }
   };
@@ -113,7 +116,8 @@ export default function TimeSlotAdminPage() {
       await copySlots(copyDialog.sourceDay, copyDialog.targetDays);
       copyDialog.closeDialog();
     } catch (err) {
-      // 錯誤已在 copySlots 中處理
+      // 錯誤已在 copySlots 中處理，這裡不需要額外設定 slotsError
+      // copySlots 內已經會跳 toast.error，所以這裡也不用做什麼
     }
   };
 
