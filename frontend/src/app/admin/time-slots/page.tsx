@@ -1,10 +1,10 @@
 "use client";
 
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WeeklyCalendarView } from "@/components/admin/time-slots/WeeklyCalendarView";
 const TimeSlotDialog = dynamic(
@@ -39,7 +39,6 @@ const TIME_OPTIONS = Array.from({ length: 23 }, (_, i) => {
 });
 
 export default function TimeSlotAdminPage() {
-  const router = useRouter();
   const { isAdmin, isLoading: isAuthLoading, error: authError } = useAdminAuth();
   const {
     groupedSlots,
@@ -159,7 +158,7 @@ export default function TimeSlotAdminPage() {
           <CardHeader>
             <CardTitle>時段管理</CardTitle>
           </CardHeader>
-          <CardContent>載入中...</CardContent>
+          <CardContent>載入中…</CardContent>
         </Card>
       </div>
     );
@@ -177,7 +176,9 @@ export default function TimeSlotAdminPage() {
               <AlertTitle>權限不足</AlertTitle>
               <AlertDescription>此頁面僅提供管理員使用。</AlertDescription>
             </Alert>
-            <Button onClick={() => router.push("/")}>回首頁</Button>
+            <Link href="/" className={buttonVariants()}>
+              回首頁
+            </Link>
           </CardContent>
         </Card>
       </div>
