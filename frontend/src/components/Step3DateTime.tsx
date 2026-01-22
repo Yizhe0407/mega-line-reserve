@@ -57,7 +57,7 @@ export default function Step3DateTime() {
             <CardTitle className="text-center">選擇日期與時間</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex justify-center">
+            <div className="flex justify-center pb-8">
               <Calendar
                 mode="single"
                 locale={zhTW}
