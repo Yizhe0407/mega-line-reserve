@@ -1,14 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Wrench, Users, BarChart3 } from "lucide-react";
+import { Calendar, Wrench } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import Link from "next/link";
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
   const { isAdmin, isLoading, error } = useAdminAuth();
 
   if (isLoading) {
@@ -36,7 +35,9 @@ export default function AdminDashboardPage() {
               <AlertTitle>權限不足</AlertTitle>
               <AlertDescription>此頁面僅提供管理員使用。</AlertDescription>
             </Alert>
-            <Button onClick={() => router.push("/")}>回首頁</Button>
+            <Button asChild>
+              <Link href="/">回首頁</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -79,25 +80,23 @@ export default function AdminDashboardPage() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Card
-                key={item.href}
-                className="cursor-pointer hover:bg-accent/50 transition-colors"
-                onClick={() => router.push(item.href)}
-              >
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-muted ${item.color}`}>
-                      <Icon className="w-6 h-6" />
+              <Link key={item.href} href={item.href} className="block">
+                <Card className="hover:bg-accent/50 transition-colors">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg bg-muted ${item.color}`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <CardTitle>{item.title}</CardTitle>
                     </div>
-                    <CardTitle>{item.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {item.description}
-                  </p>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

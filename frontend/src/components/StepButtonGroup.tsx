@@ -59,7 +59,7 @@ export default function StepButtonGroup({
           reset();
         })(),
         {
-          loading: "處理中...",
+          loading: "處理中…",
           success: "預約完成！",
           error: "預約失敗，請稍後再試",
         }
@@ -86,7 +86,7 @@ export default function StepButtonGroup({
           disabled={isNextDisabled || isLoading}
           className="flex-1 h-12 "
         >
-          {isLoading ? "處理中..." : nextButtonText}
+          {isLoading ? "處理中…" : nextButtonText}
         </Button>
       </div>
     </div>

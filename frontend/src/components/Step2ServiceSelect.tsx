@@ -86,9 +86,14 @@ export default function Step2ServiceSelect() {
                 !(otherServiceId ? step2Data?.selectServe?.includes(otherServiceId) : false) && "hidden"
               )}
             >
+              <Label htmlFor="other-service" className="text-md font-bold">
+                其他服務需求
+              </Label>
               <Textarea
                 id="other-service"
-                placeholder="請詳細說明您的服務需求..."
+                name="other-service"
+                autoComplete="off"
+                placeholder="請詳細說明您的服務需求…"
                 className="min-h-[100px]"
                 value={step2Data?.otherService || ""}
                 onChange={e =>

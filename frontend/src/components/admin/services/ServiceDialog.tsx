@@ -109,7 +109,7 @@ export function ServiceDialog({
               <Button variant="outline" onClick={onToggleActive}>
                 {editingService.isActive ? "停用" : "啟用"}
               </Button>
-              <Button variant="destructive" onClick={onDelete}>
+              <Button variant="destructive" onClick={onDelete} aria-label="刪除服務">
                 <Trash2 className="w-4 h-4" />
               </Button>
             </>

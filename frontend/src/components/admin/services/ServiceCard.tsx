@@ -7,8 +7,9 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, onClick }: ServiceCardProps) {
   return (
-    <div
-      className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+    <button
+      type="button"
+      className={`w-full text-left p-4 rounded-lg border cursor-pointer transition-colors ${
         service.isActive
           ? "bg-card hover:bg-accent/50 border-border"
           : "bg-muted border-muted-foreground/30 opacity-60"
@@ -24,13 +25,13 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
             </span>
           )}
         </div>
-        
+
         {service.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
             {service.description}
           </p>
         )}
-        
+
         <div className="flex gap-4 text-sm">
           {service.price !== null && service.price !== undefined && (
             <div className="text-muted-foreground">
@@ -44,6 +45,6 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }

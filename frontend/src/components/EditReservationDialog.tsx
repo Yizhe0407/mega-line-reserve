@@ -152,18 +152,21 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
               {services.map((service) => {
                 const isSelected = selectedServices.includes(service.id);
                 return (
-                  <div
+                  <button
                     key={service.id}
+                    type="button"
                     onClick={() => handleServiceToggle(service.id)}
-                    className={`
-                      cursor-pointer rounded-lg border p-4 text-center transition-all
-                      ${isSelected 
-                        ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary' 
-                        : 'border-muted hover:bg-muted/50'}
-                    `}
+                    aria-pressed={isSelected}
+                    className={
+                      `w-full cursor-pointer rounded-lg border p-4 text-center transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary"
+                          : "border-muted hover:bg-muted/50"
+                      }`
+                    }
                   >
                     <span className="text-sm font-medium">{service.name}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

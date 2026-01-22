@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { useStepStore } from "@/store/step-store";
 import { useStepUserData } from "@/hooks/useStepUserData";
 import StepButtonGroup from "./StepButtonGroup";
@@ -34,12 +35,14 @@ export default function Step1UserInfo() {
               </Alert>
             )}
             <div className="space-y-2">
-              <p className="text-md font-bold">
+              <Label htmlFor="name" className="text-md font-bold">
                 姓名 <span className="text-destructive">*</span>
-              </p>
+              </Label>
               <Input
                 id="name"
-                placeholder={isLoading ? "正在獲取中..." : "請輸入您的姓名"}
+                name="name"
+                autoComplete="name"
+                placeholder={isLoading ? "正在獲取中…" : "請輸入您的姓名"}
                 className="h-12"
                 value={step1Data?.name || ""}
                 onChange={(e) => setStep1Data({ name: e.target.value })}
@@ -47,12 +50,14 @@ export default function Step1UserInfo() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-md font-bold">
+              <Label htmlFor="license" className="text-md font-bold">
                 車牌號碼 <span className="text-destructive">*</span>
-              </p>
+              </Label>
               <Input
                 id="license"
-                placeholder={isLoading ? "正在獲取中..." : "請輸入車牌號碼"}
+                name="license"
+                autoComplete="off"
+                placeholder={isLoading ? "正在獲取中…" : "請輸入車牌號碼"}
                 className="h-12"
                 value={step1Data?.license || ""}
                 onChange={(e) =>

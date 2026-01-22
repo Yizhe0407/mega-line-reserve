@@ -94,7 +94,7 @@ export function TimeSlotDialog({
               <Button variant="outline" onClick={onToggleActive}>
                 {editingSlot.isActive ? "停用" : "啟用"}
               </Button>
-              <Button variant="destructive" onClick={onDelete}>
+              <Button variant="destructive" onClick={onDelete} aria-label="刪除時段">
                 <Trash2 className="w-4 h-4" />
               </Button>
             </>

@@ -205,6 +205,7 @@ function ProfilePageContent() {
                   size="icon"
                   onClick={() => setShowNavigationTip(false)}
                   className="h-9 w-9 p-0"
+                  aria-label="關閉提示"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -232,10 +233,22 @@ function ProfilePageContent() {
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  aria-label="取消編輯"
+                >
                   <X className="h-4 w-4" />
                 </Button>
-                <Button variant="default" size="sm" onClick={handleSave} disabled={isSaving}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  aria-label="儲存變更"
+                >
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 </Button>
               </div>
@@ -254,6 +267,8 @@ function ProfilePageContent() {
                 <>
                   <Input
                     id="profile-name"
+                    name="name"
+                    autoComplete="name"
                     value={localData?.name || ""}
                     onChange={(e) => setLocalData({ ...localData, name: e.target.value })}
                     className={`h-12 ${errors.name ? 'border-destructive' : ''}`}
@@ -275,6 +290,8 @@ function ProfilePageContent() {
                   <Input
                     id="profile-phone"
                     type="tel"
+                    name="phone"
+                    autoComplete="tel"
                     value={localData?.phone || ""}
                     onChange={(e) => setLocalData({ ...localData, phone: e.target.value })}
                     className={`h-12 ${errors.phone ? 'border-destructive' : ''}`}
@@ -295,6 +312,8 @@ function ProfilePageContent() {
                 <>
                   <Input
                     id="profile-license"
+                    name="license"
+                    autoComplete="off"
                     value={localData?.license || ""}
                     onChange={(e) => setLocalData({ ...localData, license: e.target.value.toUpperCase() })}
                     className={`h-12 ${errors.license ? 'border-destructive' : ''}`}
