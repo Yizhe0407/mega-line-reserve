@@ -1,5 +1,5 @@
 'use client'
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -18,22 +18,6 @@ export default function Step2ServiceSelect() {
   const setStep2Data = useStepStore((state) => state.setStep2Data)
   const { services, isLoading } = useStepServices()
 
-  const toggleService = (serviceId: number) => {
-    const current = step2Data?.selectServe || []
-    const newSelected = current.includes(serviceId)
-      ? current.filter((id: number) => id !== serviceId)
-      : [...current, serviceId]
-
-    const otherServiceId = services.find((s: Service) => s.name === '其他')?.id;
-    const isOtherSelected = otherServiceId ? newSelected.includes(otherServiceId) : false;
-
-    setStep2Data({
-      ...step2Data,
-      selectServe: newSelected,
-      isOtherServiceSelected: isOtherSelected,
-    })
-  }
-
   const otherServiceId = useMemo(() => {
     return services.find((s: Service) => s.name === '其他')?.id;
   }, [services]);
@@ -41,6 +25,21 @@ export default function Step2ServiceSelect() {
   const activeServices = useMemo(() => {
     return services.filter((service: Service) => service.isActive);
   }, [services]);
+
+  const toggleService = useCallback((serviceId: number) => {
+    const current = step2Data?.selectServe || []
+    const newSelected = current.includes(serviceId)
+      ? current.filter((id: number) => id !== serviceId)
+      : [...current, serviceId]
+
+    const isOtherSelected = otherServiceId ? newSelected.includes(otherServiceId) : false;
+
+    setStep2Data({
+      ...step2Data,
+      selectServe: newSelected,
+      isOtherServiceSelected: isOtherSelected,
+    })
+  }, [otherServiceId, setStep2Data, step2Data]);
 
   return (
     <>

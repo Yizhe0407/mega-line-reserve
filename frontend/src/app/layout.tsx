@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import VerifyLIFF from "@/components/VerifyLIFF";
 import Navigation from "@/components/Navigation";
 import { ThemeProvider } from "@/components/theme-provider";
+import SWRProvider from "@/components/SWRProvider";
 
 export const metadata: Metadata = {
   title: "兆豐預約",
@@ -30,12 +31,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <VerifyLIFF />
-          <main id="main-content" className="pb-16">
-            {children}
-          </main>
-          <Navigation />
-          <Toaster />
+          <SWRProvider>
+            <VerifyLIFF />
+            <main id="main-content" className="pb-16">
+              {children}
+            </main>
+            <Navigation />
+            <Toaster />
+          </SWRProvider>
         </ThemeProvider>
       </body>
     </html>
