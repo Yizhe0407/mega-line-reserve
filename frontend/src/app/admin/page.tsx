@@ -58,20 +58,6 @@ export default function AdminDashboardPage() {
       href: "/admin/time-slots",
       color: "text-green-500",
     },
-    {
-      title: "預約管理",
-      description: "查看與管理所有預約",
-      icon: BarChart3,
-      href: "/admin/reservations",
-      color: "text-purple-500",
-    },
-    {
-      title: "用戶管理",
-      description: "管理用戶資料與權限",
-      icon: Users,
-      href: "/admin/users",
-      color: "text-orange-500",
-    },
   ];
 
   return (
