@@ -9,10 +9,9 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
 import Link from 'next/link';
-import type { Reserve } from '@/types/reserve';
-import type { Service } from '@/types/service';
+import type { Reserve } from '@/types';
+import type { Service } from '@/types';
 
 interface ReserveServiceItem {
   service: Service;
