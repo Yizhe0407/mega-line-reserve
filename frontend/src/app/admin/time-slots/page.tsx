@@ -63,6 +63,7 @@ export default function TimeSlotAdminPage() {
       setSlotsError("請選擇至少一個時間");
       return;
     }
+    timeSlotDialog.setIsSubmitting(true);
     try {
       setSlotsError(null);
 
@@ -110,6 +111,8 @@ export default function TimeSlotAdminPage() {
         setSlotsError(message);
       }
       toast.error(message);
+    } finally {
+      timeSlotDialog.setIsSubmitting(false);
     }
   };
 
@@ -118,17 +121,21 @@ export default function TimeSlotAdminPage() {
       setSlotsError("請選擇至少一個目標日期");
       return;
     }
+    copyDialog.setIsLoading(true);
     try {
       await copySlots(copyDialog.sourceDay, copyDialog.targetDays);
       copyDialog.closeDialog();
     } catch (err) {
       // 錯誤已在 copySlots 中處理，這裡不需要額外設定 slotsError
       // copySlots 內已經會跳 toast.error，所以這裡也不用做什麼
+    } finally {
+      copyDialog.setIsLoading(false);
     }
   };
 
   const handleDelete = async () => {
     if (!deleteDialog.itemToDelete) return;
+    deleteDialog.setIsLoading(true);
     try {
       setSlotsError(null);
       await deleteTimeSlot(deleteDialog.itemToDelete.id);
@@ -138,17 +145,24 @@ export default function TimeSlotAdminPage() {
       const message = err instanceof Error ? err.message : "刪除失敗";
       setSlotsError(message);
       toast.error(message);
+    } finally {
+      deleteDialog.setIsLoading(false);
     }
   };
 
   const handleToggleActive = async () => {
     if (!timeSlotDialog.editingSlot) return;
-    await toggleActive(timeSlotDialog.editingSlot);
-    // 更新 dialog 中的 editingSlot 狀態
-    timeSlotDialog.setEditingSlot({
-      ...timeSlotDialog.editingSlot,
-      isActive: !timeSlotDialog.editingSlot.isActive,
-    });
+    timeSlotDialog.setIsToggling(true);
+    try {
+      await toggleActive(timeSlotDialog.editingSlot);
+      // 更新 dialog 中的 editingSlot 狀態
+      timeSlotDialog.setEditingSlot({
+        ...timeSlotDialog.editingSlot,
+        isActive: !timeSlotDialog.editingSlot.isActive,
+      });
+    } finally {
+      timeSlotDialog.setIsToggling(false);
+    }
   };
 
   if (isDataLoading) {
@@ -217,6 +231,8 @@ export default function TimeSlotAdminPage() {
         selectedTimes={timeSlotDialog.selectedTimes}
         capacity={timeSlotDialog.capacity}
         editingSlot={timeSlotDialog.editingSlot}
+        isSubmitting={timeSlotDialog.isSubmitting}
+        isToggling={timeSlotDialog.isToggling}
         onTimeToggle={timeSlotDialog.toggleTimeSelection}
         onCapacityChange={timeSlotDialog.setCapacity}
         onSubmit={handleDialogSubmit}
@@ -238,6 +254,7 @@ export default function TimeSlotAdminPage() {
         sourceDay={copyDialog.sourceDay}
         targetDays={copyDialog.targetDays}
         slotCount={groupedSlots[copyDialog.sourceDay]?.length || 0}
+        isLoading={copyDialog.isLoading}
         onToggleTargetDay={copyDialog.toggleTargetDay}
         onConfirm={handleCopySlots}
       />
@@ -247,6 +264,7 @@ export default function TimeSlotAdminPage() {
         onOpenChange={deleteDialog.setIsOpen}
         slot={deleteDialog.itemToDelete}
         weekdays={WEEKDAYS}
+        isLoading={deleteDialog.isLoading}
         onConfirm={handleDelete}
       />
     </div>

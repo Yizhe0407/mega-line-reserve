@@ -8,6 +8,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
 import { createReserve } from "@/lib/api/endpoints/reserve";
 import { useSWRConfig } from "swr";
+import { Loader2 } from "lucide-react";
 
 export default function StepButtonGroup({
   isLoading = false,
@@ -101,6 +102,7 @@ export default function StepButtonGroup({
           disabled={isNextDisabled || isLoading}
           className="flex-1 h-12 "
         >
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isLoading ? "處理中…" : nextButtonText}
         </Button>
       </div>

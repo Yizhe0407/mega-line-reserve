@@ -48,7 +48,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #f5f5f6;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -121,5 +121,27 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* 響應式安全樣式 */
+@layer utilities {
+  /* 防止長文字溢出容器 */
+  .break-anywhere {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* 確保 flex 子元素不會溢出 */
+  .flex-item-safe {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  /* 小螢幕友好的按鈕群組 */
+  .btn-group-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 }

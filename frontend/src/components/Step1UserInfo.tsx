@@ -17,12 +17,15 @@ export default function Step1UserInfo() {
   return (
     <>
       <div className="px-4 pt-20">
-        <Card>
+        <Card className="shadow-none border-none">
           <CardHeader>
             <CardTitle className="text-center">基本資料</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Button onClick={() => fetchUserData(null)} className="w-full">
+            <Button 
+              onClick={() => fetchUserData(null)} 
+              className="w-full bg-black text-white hover:bg-gray-800 rounded-xl h-12"
+            >
               自動填入
             </Button>
             {/* 載入提示 */}
@@ -43,7 +46,8 @@ export default function Step1UserInfo() {
                 name="name"
                 autoComplete="name"
                 placeholder={isLoading ? "正在獲取中…" : "請輸入您的姓名"}
-                className="h-12"
+                className="h-12 border-none"
+                style={{ backgroundColor: '#f8f8f8' }}
                 value={step1Data?.name || ""}
                 onChange={(e) => setStep1Data({ name: e.target.value })}
               />
@@ -58,7 +62,8 @@ export default function Step1UserInfo() {
                 name="license"
                 autoComplete="off"
                 placeholder={isLoading ? "正在獲取中…" : "例如：ABC-1234 或 1234-AA"}
-                className="h-12"
+                className="h-12 border-none"
+                style={{ backgroundColor: '#f8f8f8' }}
                 value={step1Data?.license || ""}
                 onChange={(e) =>
                   setStep1Data({ license: e.target.value.toUpperCase() })

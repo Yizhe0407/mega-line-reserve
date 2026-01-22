@@ -190,20 +190,20 @@ function ProfilePageContent() {
 
         {showNavigationTip && !isLoading && (
           <Alert className="mb-6 items-center border-blue-200 bg-blue-50/80 shadow-sm">
-            <AlertTitle className="flex items-center text-blue-800 font-medium justify-between">
+            <AlertTitle className="flex flex-col sm:flex-row sm:items-center text-blue-800 font-medium gap-3 sm:justify-between">
               <div className="flex gap-3 items-center">
-                <Info className="h-4 w-4 text-blue-600" />
+                <Info className="h-4 w-4 text-blue-600 shrink-0" />
                 <p>需要預約？</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleGoToBooking}
-                  className="h-9 px-4 font-medium"
+                  className="h-9 px-3 font-medium text-sm"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-1.5" />
-                  立即預約
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <span>立即預約</span>
                 </Button>
                 <Button
                   variant="ghost"
@@ -228,7 +228,7 @@ function ProfilePageContent() {
           </Alert>
         )}
 
-        <Card className="mb-6">
+        <Card className="mb-6 shadow-none border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">基本資料</CardTitle>
             {!isEditing ? (
@@ -276,13 +276,14 @@ function ProfilePageContent() {
                     autoComplete="name"
                     value={localData?.name || ""}
                     onChange={(e) => setLocalData({ ...localData, name: e.target.value })}
-                    className={`h-12 ${errors.name ? 'border-destructive' : ''}`}
+                    className={`h-12 border-none ${errors.name ? 'ring-2 ring-destructive' : ''}`}
+                    style={{ backgroundColor: '#f8f8f8' }}
                     disabled={isSaving}
                   />
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </>
               ) : (
-                <div className="h-12 px-3 py-2 border rounded-md bg-muted/50 flex items-center">
+                <div className="h-12 px-3 py-2 rounded-md flex items-center" style={{ backgroundColor: '#f8f8f8' }}>
                   {step1Data?.name || ""}
                 </div>
               )}
@@ -299,13 +300,14 @@ function ProfilePageContent() {
                     autoComplete="tel"
                     value={localData?.phone || ""}
                     onChange={(e) => setLocalData({ ...localData, phone: e.target.value })}
-                    className={`h-12 ${errors.phone ? 'border-destructive' : ''}`}
+                    className={`h-12 border-none ${errors.phone ? 'ring-2 ring-destructive' : ''}`}
+                    style={{ backgroundColor: '#f8f8f8' }}
                     disabled={isSaving}
                   />
                   {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
                 </>
               ) : (
-                <div className="h-12 px-3 py-2 border rounded-md bg-muted/50 flex items-center">
+                <div className="h-12 px-3 py-2 rounded-md flex items-center" style={{ backgroundColor: '#f8f8f8' }}>
                   {step1Data?.phone || ""}
                 </div>
               )}
@@ -321,14 +323,15 @@ function ProfilePageContent() {
                     autoComplete="off"
                     value={localData?.license || ""}
                     onChange={(e) => setLocalData({ ...localData, license: e.target.value.toUpperCase() })}
-                    className={`h-12 ${errors.license ? 'border-destructive' : ''}`}
+                    className={`h-12 border-none ${errors.license ? 'ring-2 ring-destructive' : ''}`}
+                    style={{ backgroundColor: '#f8f8f8' }}
                     disabled={isSaving}
                     placeholder="例如：ABC-1234 或 1234-AA"
                   />
                   {errors.license && <p className="text-sm text-red-500">{errors.license}</p>}
                 </>
               ) : (
-                <div className="h-12 px-3 py-2 border rounded-md bg-muted/50 flex items-center">
+                <div className="h-12 px-3 py-2 rounded-md flex items-center" style={{ backgroundColor: '#f8f8f8' }}>
                   {step1Data?.license || ""}
                 </div>
               )}

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Service } from "@/types"
+import { Car } from "lucide-react"
 
 
 export default function Step2ServiceSelect() {
@@ -44,7 +45,7 @@ export default function Step2ServiceSelect() {
   return (
     <>
       <div className="px-4 pt-20">
-        <Card>
+        <Card className="shadow-none border-none">
           <CardHeader>
             <CardTitle className="text-center">預約項目</CardTitle>
           </CardHeader>
@@ -54,20 +55,28 @@ export default function Step2ServiceSelect() {
               <div className="grid gap-3">
                 {isLoading ? (
                   <>
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
                   </>
                 ) : (
                   activeServices.map((service: Service) => (
-                      <Button
+                      <div
                         key={service.id}
-                        variant={step2Data?.selectServe?.includes(service.id) ? "default" : "outline"}
                         onClick={() => toggleService(service.id)}
-                        className="h-12 justify-start"
+                        className={cn(
+                          "flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-colors",
+                          step2Data?.selectServe?.includes(service.id)
+                            ? "bg-black text-white"
+                            : "bg-[#f8f8f8] hover:bg-gray-200"
+                        )}
                       >
-                        {service.name}
-                      </Button>
+                        <span className="font-medium text-base">{service.name}</span>
+                        <span className={cn(
+                          "text-sm",
+                          step2Data?.selectServe?.includes(service.id) ? "text-gray-300" : "text-gray-600"
+                        )}>{service.duration}</span>
+                      </div>
                     ))
                 )}
               </div>
@@ -100,7 +109,14 @@ export default function Step2ServiceSelect() {
 
             <div className="space-y-4">
               <p className="text-md font-bold">額外服務</p>
-              <div className="flex items-center space-x-2">
+              <div 
+                className="flex items-center space-x-2 px-4 py-3 rounded-xl cursor-pointer" 
+                style={{ backgroundColor: '#f8f8f8' }}
+                onClick={() => setStep2Data({
+                  ...step2Data,
+                  extra: !step2Data?.extra,
+                })}
+              >
                 <Checkbox
                   id="pickup"
                   checked={step2Data?.extra || false}
@@ -111,7 +127,8 @@ export default function Step2ServiceSelect() {
                     })
                   }}
                 />
-                <Label htmlFor="pickup" className="text-sm font-normal">
+                <Car className="h-5 w-5 text-gray-600" />
+                <Label htmlFor="pickup" className="text-sm font-normal cursor-pointer">
                   需要到府牽車
                 </Label>
               </div>

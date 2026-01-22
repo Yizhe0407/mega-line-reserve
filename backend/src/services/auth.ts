@@ -32,16 +32,11 @@ export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerif
     }
 
     try {
-        console.log('[DEBUG] Verifying LINE id_token...');
-        console.log('[DEBUG] Token (first 20 chars):', idToken.substring(0, 20) + '...');
-
         const response = await axios.post<LineIdTokenVerifyResponse>(
             'https://api.line.me/oauth2/v2.1/verify',
             new URLSearchParams({ id_token: idToken, client_id: lineChannelId }),
             { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
         );
-
-        console.log('[DEBUG] LINE API response:', response.data);
 
         if (response.data.aud && response.data.aud !== lineChannelId) {
             throw new AuthenticationError('無效的 token - Channel ID 不符');
@@ -50,7 +45,6 @@ export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerif
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
-            console.log('[DEBUG] LINE API error response:', error.response?.data);
             throw new AuthenticationError('Token 已過期或無效');
         }
         throw error;
@@ -66,12 +60,10 @@ export const loginOrRegister = async (
     license?: string
 ) => {
     // 使用 id_token 取得使用者資訊
-    console.log('[DEBUG] Verifying LINE id_token...');
     const tokenInfo = await verifyLineToken(idToken);
     const lineId = tokenInfo.sub;
     const displayName = tokenInfo.name || '';
     const pictureUrl = tokenInfo.picture || '';
-    console.log('[DEBUG] LINE token verified:', { lineId, displayName });
 
     // 查詢用戶是否存在
     let user = await userModel.findUserByLineId(lineId);

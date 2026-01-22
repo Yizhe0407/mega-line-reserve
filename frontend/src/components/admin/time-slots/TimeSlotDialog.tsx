@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import type { TimeSlot } from "@/types";
 
 interface TimeSlotDialogProps {
@@ -19,6 +19,8 @@ interface TimeSlotDialogProps {
   selectedTimes: string[];
   capacity: number;
   editingSlot: TimeSlot | null;
+  isSubmitting?: boolean;
+  isToggling?: boolean;
   onTimeToggle: (time: string) => void;
   onCapacityChange: (capacity: number) => void;
   onSubmit: () => void;
@@ -35,6 +37,8 @@ export function TimeSlotDialog({
   selectedTimes,
   capacity,
   editingSlot,
+  isSubmitting = false,
+  isToggling = false,
   onTimeToggle,
   onCapacityChange,
   onSubmit,
@@ -86,15 +90,17 @@ export function TimeSlotDialog({
           </Select>
         </div>
         <div className="flex gap-2 pt-4">
-          <Button onClick={onSubmit} className="flex-1">
+          <Button onClick={onSubmit} className="flex-1" disabled={isSubmitting || isToggling}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editingSlot ? "儲存" : "新增"}
           </Button>
           {editingSlot && (
             <>
-              <Button variant="outline" onClick={onToggleActive}>
+              <Button variant="outline" onClick={onToggleActive} disabled={isSubmitting || isToggling}>
+                {isToggling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingSlot.isActive ? "停用" : "啟用"}
               </Button>
-              <Button variant="destructive" onClick={onDelete} aria-label="刪除時段">
+              <Button variant="destructive" onClick={onDelete} aria-label="刪除時段" disabled={isSubmitting || isToggling}>
                 <Trash2 className="w-4 h-4" />
               </Button>
             </>

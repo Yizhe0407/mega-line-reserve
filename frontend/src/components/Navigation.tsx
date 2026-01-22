@@ -6,8 +6,8 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const navItems = [
   { href: "/", label: "預約", icon: Calendar },
-  { href: "/history", label: "預約紀錄", icon: History },
-  { href: "/profile", label: "個人資料", icon: User },
+  { href: "/history", label: "紀錄", icon: History },
+  { href: "/profile", label: "我的", icon: User },
 ];
 
 export default function Navigation() {
@@ -16,7 +16,7 @@ export default function Navigation() {
 
   // 如果是管理員，加入後台管理按鈕
   const items = isAdmin 
-    ? [...navItems, { href: "/admin", label: "後台管理", icon: Settings }]
+    ? [...navItems, { href: "/admin", label: "管理", icon: Settings }]
     : navItems;
 
   return (
@@ -28,7 +28,7 @@ export default function Navigation() {
               <Link
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center justify-center h-16 gap-1 text-xs ${
+                className={`flex-1 flex flex-col items-center justify-center h-16 gap-0.5 sm:gap-1 text-[10px] sm:text-xs ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >

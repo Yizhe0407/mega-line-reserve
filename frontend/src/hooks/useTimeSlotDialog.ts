@@ -7,6 +7,8 @@ export function useTimeSlotDialog() {
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [capacity, setCapacity] = useState(1);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   const openAddDialog = useCallback((dayOfWeek: number) => {
     setSelectedDayOfWeek(dayOfWeek);
@@ -49,9 +51,13 @@ export function useTimeSlotDialog() {
     selectedTimes,
     capacity,
     editingSlot,
+    isSubmitting,
+    isToggling,
     setIsOpen,
     setCapacity,
     setEditingSlot,
+    setIsSubmitting,
+    setIsToggling,
     openAddDialog,
     openEditDialog,
     toggleTimeSelection,

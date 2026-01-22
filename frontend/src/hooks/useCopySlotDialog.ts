@@ -4,6 +4,7 @@ export function useCopySlotDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [sourceDay, setSourceDay] = useState<number>(0);
   const [targetDays, setTargetDays] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const openDialog = useCallback((day: number) => {
     setSourceDay(day);
@@ -25,7 +26,9 @@ export function useCopySlotDialog() {
     isOpen,
     sourceDay,
     targetDays,
+    isLoading,
     setIsOpen,
+    setIsLoading,
     openDialog,
     toggleTargetDay,
     closeDialog,

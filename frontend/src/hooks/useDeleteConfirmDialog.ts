@@ -3,6 +3,7 @@ import { useState, useCallback } from "react";
 export function useDeleteConfirmDialog<T = any>() {
   const [isOpen, setIsOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const openDialog = useCallback((item: T) => {
     setItemToDelete(item);
@@ -17,7 +18,9 @@ export function useDeleteConfirmDialog<T = any>() {
   return {
     isOpen,
     itemToDelete,
+    isLoading,
     setIsOpen,
+    setIsLoading,
     openDialog,
     closeDialog,
   };

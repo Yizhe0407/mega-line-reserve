@@ -144,110 +144,111 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
       title="修改預約"
       description="請選擇新的日期、時間或服務項目。"
     >
-        <div className="space-y-6 py-4">
-          {/* Services Section */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">服務項目</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {services.map((service) => {
-                const isSelected = selectedServices.includes(service.id);
-                return (
-                  <button
-                    key={service.id}
-                    type="button"
-                    onClick={() => handleServiceToggle(service.id)}
-                    aria-pressed={isSelected}
-                    className={
-                      `w-full cursor-pointer rounded-lg border p-4 text-center transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/5 text-primary ring-1 ring-primary"
-                          : "border-muted hover:bg-muted/50"
-                      }`
-                    }
-                  >
-                    <span className="text-sm font-medium">{service.name}</span>
-                  </button>
-                );
-              })}
+      <div className="space-y-5 py-2">
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-neutral-700">服務項目</Label>
+          <div className="flex flex-wrap gap-2">
+            {services.map((service) => {
+              const isSelected = selectedServices.includes(service.id);
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => handleServiceToggle(service.id)}
+                  aria-pressed={isSelected}
+                  className={
+                    `rounded-full border px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-medium transition-colors ${
+                      isSelected
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                    }`
+                  }
+                >
+                  {service.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-neutral-700">日期</Label>
+          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 min-h-[380px]">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(d) => {
+                setDate(d);
+                setTimeSlotId(null);
+              }}
+              disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))}
+              locale={zhTW}
+              className="rounded-xl bg-transparent w-full"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-neutral-700">到府牽車</Label>
+          <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+            <Checkbox
+              id="edit-pickup"
+              checked={isPickup}
+              onCheckedChange={(checked) => setIsPickup(checked as boolean)}
+            />
+            <Label htmlFor="edit-pickup" className="text-sm font-medium text-neutral-600">
+              需要到府牽車
+            </Label>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-neutral-700">時間</Label>
+          {!date ? (
+            <div className="rounded-2xl border border-dashed border-neutral-200 py-6 text-center text-sm text-neutral-400">
+              請先選擇日期
             </div>
-          </div>
-
-          {/* Date Selection */}
-          <div className="space-y-3">
-             <Label className="text-base font-semibold">日期</Label>
-             <div className="flex justify-center border rounded-md p-2">
-               <Calendar
-                 mode="single"
-                 selected={date}
-                 onSelect={(d) => {
-                   setDate(d);
-                   setTimeSlotId(null); // Reset time if date changes
-                 }}
-                 disabled={(d) => d < new Date(new Date().setHours(0,0,0,0))}
-                 locale={zhTW}
-                 className="rounded-md"
-               />
-             </div>
-          </div>
-
-           {/* Pickup Service Selection */}
-           <div className="space-y-3">
-             <div className="flex items-center space-x-2 border rounded-lg p-4">
-               <Checkbox 
-                 id="edit-pickup" 
-                 checked={isPickup}
-                 onCheckedChange={(checked) => setIsPickup(checked as boolean)}
-               />
-               <div className="grid gap-1.5 leading-none">
-                 <Label htmlFor="edit-pickup" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                   需要到府牽車
-                 </Label>
-               </div>
-             </div>
-           </div>
-
-           {/* Time Selection */}
-           <div className="space-y-3">
-             <Label className="text-base font-semibold">時間</Label>
-             {!date ? (
-               <div className="text-sm text-muted-foreground text-center py-4">請先選擇日期</div>
-             ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {isLoadingSlots ? (
-                    <div className="col-span-3 flex justify-center py-4"><Loader2 className="animate-spin" /></div>
-                  ) : filteredSlots.length > 0 ? (
-                    filteredSlots.map(slot => {
-                      const isFull = (slot._count?.reserves ?? 0) >= slot.capacity;
-                      const isCurrentSlot = slot.id === reserve.timeSlotId && format(date, 'yyyy-MM-dd') === reserve.date;
-                      const disableBtn = !isCurrentSlot && isFull; 
-                      
-                      return (
-                        <Button
-                          key={slot.id}
-                          variant={timeSlotId === slot.id ? 'default' : 'outline'}
-                          disabled={disableBtn || isPastTime(format(date, 'yyyy-MM-dd'), slot.startTime)}
-                          onClick={() => setTimeSlotId(slot.id)}
-                          className="h-9 px-2 text-xs"
-                        >
-                          {slot.startTime} {disableBtn && '(滿)'}
-                        </Button>
-                      )
-                    })
-                  ) : (
-                    <div className="col-span-3 text-sm text-center py-2">此日無時段</div>
-                  )}
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {isLoadingSlots ? (
+                <div className="col-span-3 flex justify-center py-4"><Loader2 className="animate-spin" /></div>
+              ) : filteredSlots.length > 0 ? (
+                filteredSlots.map(slot => {
+                  const isFull = (slot._count?.reserves ?? 0) >= slot.capacity;
+                  const isCurrentSlot = slot.id === reserve.timeSlotId && format(date, 'yyyy-MM-dd') === reserve.date;
+                  const disableBtn = !isCurrentSlot && isFull; 
+                  
+                  return (
+                    <Button
+                      key={slot.id}
+                      variant={timeSlotId === slot.id ? 'default' : 'outline'}
+                      disabled={disableBtn || isPastTime(format(date, 'yyyy-MM-dd'), slot.startTime)}
+                      onClick={() => setTimeSlotId(slot.id)}
+                      className="h-9 rounded-full px-2 text-xs"
+                    >
+                      {slot.startTime} {disableBtn && '(滿)'}
+                    </Button>
+                  )
+                })
+              ) : (
+                <div className="col-span-3 rounded-2xl border border-dashed border-neutral-200 py-4 text-center text-sm text-neutral-400">
+                  此日無時段
                 </div>
-             )}
-           </div>
+              )}
+            </div>
+          )}
         </div>
+      </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>取消</Button>
-          <Button onClick={handleSave} disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            儲存變更
-          </Button>
-        </div>
+      <div className="flex gap-3 pt-4">
+        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isSubmitting}>
+          取消
+        </Button>
+        <Button className="flex-1" onClick={handleSave} disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          儲存變更
+        </Button>
+      </div>
     </ResponsiveDialog>
   );
 }

@@ -27,7 +27,7 @@ export default function Step4Confirm() {
   return (
     <>
       <div className="px-4 pt-20">
-        <Card>
+        <Card className="shadow-none border-none">
           <CardHeader>
             <CardTitle className="text-center">確認預約資訊</CardTitle>
           </CardHeader>
@@ -52,9 +52,9 @@ export default function Step4Confirm() {
               <div>
                 <h3 className="font-bold text-sm mb-2">服務項目</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm text-muted-foreground pt-0.5">選擇項目</span>
-                    <div className="flex flex-wrap gap-2 justify-end max-w-[70%]">
+                <div className="flex flex-col gap-2">
+                    <span className="text-sm text-muted-foreground">選擇項目</span>
+                    <div className="flex flex-wrap gap-2">
                       {selectedServices.map(service => (
                         <Badge key={service.id} variant="secondary">
                           {service.name}

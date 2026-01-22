@@ -22,7 +22,7 @@ export default function ProgressBar() {
                     ? "bg-primary text-primary-foreground"
                     : isActive
                     ? "bg-primary/80 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    : "bg-neutral-300 text-neutral-600"
                 )}
               >
                 {stepNumber}
@@ -31,7 +31,7 @@ export default function ProgressBar() {
                 <div
                   className={cn(
                     "flex-1 h-0.5 mx-2 transition-colors",
-                    stepNumber < currentStep ? "bg-primary" : "bg-muted"
+                    stepNumber < currentStep ? "bg-primary" : "bg-neutral-300"
                   )}
                 />
               )}

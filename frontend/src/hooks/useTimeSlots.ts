@@ -134,17 +134,21 @@ export function useTimeSlots(enabled = true) {
           throw new Error("來源日期沒有時段可複製");
         }
 
-        // 對每個目標日期執行複製
+        let totalAdded = 0;
+        let totalSkipped = 0;
+
+        // 對每個目標日期執行複製（合併策略：只新增缺少的時段）
         for (const targetDay of targetDays) {
-          // 1. 刪除目標日期的所有時段
           const targetSlots = groupedSlots[targetDay] || [];
-          await Promise.all(
-            targetSlots.map((slot) => deleteTimeSlotApi(slot.id, idToken))
+          const existingTimes = new Set(targetSlots.map((s) => s.startTime));
+
+          // 只新增目標日期不存在的時段
+          const slotsToAdd = sourceSlots.filter(
+            (slot) => !existingTimes.has(slot.startTime)
           );
 
-          // 2. 複製來源日期的時段到目標日期
           const results = await Promise.allSettled(
-            sourceSlots.map((slot) =>
+            slotsToAdd.map((slot) =>
               createTimeSlotApi(
                 {
                   dayOfWeek: targetDay,
@@ -156,22 +160,21 @@ export function useTimeSlots(enabled = true) {
               )
             )
           );
-          
-          // 統計失敗是否僅因為重複
-          const failures = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
-          if (failures.length > 0) {
-            console.warn(`複製到週 ${targetDay} 時發生 ${failures.length} 個錯誤`, failures);
-          }
+
+          totalAdded += results.filter((r) => r.status === "fulfilled").length;
+          totalSkipped += sourceSlots.length - slotsToAdd.length;
         }
 
         await mutate();
-        toast.success(`已複製到 ${targetDays.length} 天`);
+
+        if (totalSkipped > 0) {
+          toast.success(`已新增 ${totalAdded} 個時段，${totalSkipped} 個已存在跳過`);
+        } else {
+          toast.success(`已新增 ${totalAdded} 個時段到 ${targetDays.length} 天`);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "複製失敗";
-        // 只有非重複時段的嚴重錯誤才顯示
-        if (!message.includes("已存在")) {
-           setActionError(message);
-        }
+        setActionError(message);
         toast.error(message);
         throw err;
       }
