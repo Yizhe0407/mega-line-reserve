@@ -61,7 +61,7 @@ export function ResponsiveDialog({
             {description && <DrawerDescription>{description}</DrawerDescription>}
           </DrawerHeader>
         )}
-        <div className="px-4 pb-4">{children}</div>
+        <div className="px-4 pb-4 overflow-y-auto">{children}</div>
       </DrawerContent>
     </Drawer>
   );

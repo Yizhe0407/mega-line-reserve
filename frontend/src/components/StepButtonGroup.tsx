@@ -36,6 +36,7 @@ export default function StepButtonGroup({
       timeSlotId: step3Data.timeSlotId!,
       license: step1Data.license!,
       userMemo: step2Data.isOtherServiceSelected ? step2Data.otherService : undefined,
+      date: step3Data.date!,
     };
     try {
       const idToken = liff.getIDToken();

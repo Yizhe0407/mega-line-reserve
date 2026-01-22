@@ -60,6 +60,7 @@ model Reserve {
   timeSlotId Int
   license    String
   status     ReserveStatus @default(PENDING)
+  date       DateTime      @db.Date
 
   userMemo  String?
   adminMemo String?

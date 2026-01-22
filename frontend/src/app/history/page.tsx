@@ -8,10 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock } from 'lucide-react';
+import { History, PlusCircle, AlertCircle, Trash2, Calendar, Wrench, CheckCircle, Clock, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import type { Reserve } from '@/types';
 import type { Service } from '@/types';
+import EditReservationDialog from '@/components/EditReservationDialog';
+import { toast } from 'react-hot-toast';
+import { useLiffMessage } from '@/hooks/useLiffMessage';
 
 interface ReserveServiceItem {
   service: Service;
@@ -24,18 +27,16 @@ interface ReserveWithServices extends Reserve {
 interface ReservationCardProps {
   reserve: ReserveWithServices;
   onCancel: (reserveId: number) => void;
+  onEdit: (reserve: ReserveWithServices) => void;
 }
 
-const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
-  // 由於時段改為星期制，我們需要從其他資訊推斷完整日期
-  // 這裡使用 createdAt 作為參考日期（實際應該有預約日期欄位）
+const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) => {
   const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
   const dayOfWeek = reserve.timeSlot?.dayOfWeek ?? 0;
   const startTime = reserve.timeSlot?.startTime ?? '00:00';
   const weekdayName = WEEKDAYS[dayOfWeek];
   
-  // TODO: 未來應該在 Reserve 模型加入實際預約日期欄位
-  const isPast = false; // 暫時無法判斷是否過期
+  const isPast = false; 
   const status = reserve.status === 'COMPLETED' || reserve.status === 'CANCELLED' ? '已完成' : '已確認';
   const statusConfig = {
     '已確認': {
@@ -57,7 +58,7 @@ const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center">
             <Calendar className="mr-2" />
-            {weekdayName} {startTime}
+            {reserve.date ? new Date(reserve.date as unknown as string).toLocaleDateString() : weekdayName} {startTime}
           </CardTitle>
           <Badge variant={currentStatus.variant} className={cn('flex items-center', currentStatus.className)}>
             {currentStatus.icon}
@@ -76,7 +77,11 @@ const ReservationCard = ({ reserve, onCancel }: ReservationCardProps) => {
         </div>
       </CardContent>
       {!isPast && (
-        <CardFooter className="flex justify-end">
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" size="sm" onClick={() => onEdit(reserve)}>
+             <Pencil className="mr-2 h-4 w-4" />
+             修改
+          </Button>
           <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={() => onCancel(reserve.id)}>
             <Trash2 className="mr-2 h-4 w-4" />
             取消預約
@@ -91,75 +96,118 @@ export default function RecordPage() {
   const [reservations, setReservations] = useState<ReserveWithServices[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { userId } = useStepStore();
+  const { userId, setServices } = useStepStore();
+  const { sendUpdateLineMessage } = useLiffMessage();
+
+  // Dialog State
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingReserve, setEditingReserve] = useState<ReserveWithServices | null>(null);
 
   useEffect(() => {
-    const fetchReservations = async () => {
-      try {
+    const loadServices = async () => {
+        try {
+            const res = await fetch('/api/service');
+            if (res.ok) {
+                const data = await res.json();
+                setServices(data);
+            }
+        } catch(e) { console.error(e); }
+    };
+    loadServices();
+  }, [setServices]);
+
+  const fetchReservations = async () => {
+    try {
         const idToken = liff.getIDToken();
-        if (!idToken) {
-          throw new Error('無法取得 ID token。');
-        }
+        if (!idToken) throw new Error('無法取得 ID token。');
+        
         const response = await fetch(`/api/reserve`, {
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-          },
+          headers: { 'Authorization': `Bearer ${idToken}` },
         });
 
-        if (!response.ok) {
-          throw new Error('無法獲取預約紀錄。');
-        }
+        if (!response.ok) throw new Error('無法獲取預約紀錄。');
 
         const data = await response.json();
-        // Sort by dayOfWeek and startTime
         const sortedData = data.sort(
           (a: ReserveWithServices, b: ReserveWithServices) => {
-            const aDayOfWeek = a.timeSlot?.dayOfWeek ?? 0;
-            const bDayOfWeek = b.timeSlot?.dayOfWeek ?? 0;
-            if (aDayOfWeek !== bDayOfWeek) {
-              return aDayOfWeek - bDayOfWeek;
-            }
-            const aTime = a.timeSlot?.startTime ?? '';
-            const bTime = b.timeSlot?.startTime ?? '';
-            return aTime.localeCompare(bTime);
+             if (a.date && b.date) {
+               const dateA = new Date(a.date).getTime();
+               const dateB = new Date(b.date).getTime();
+               if (dateA !== dateB) {
+                 return dateA - dateB; 
+               }
+             }
+            return 0;
           },
         );
         setReservations(sortedData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '發生未知錯誤。');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '發生未知錯誤。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReservations();
   }, [userId]);
 
   const handleCancelReservation = async (reserveId: number) => {
-    if (!confirm('您確定要取消這次的預約嗎？')) {
-      return;
-    }
+    if (!confirm('您確定要取消這次的預約嗎？')) return;
 
     try {
       const idToken = liff.getIDToken();
-      if (!idToken) {
-        throw new Error('無法取得 ID token。');
-      }
+      if (!idToken) throw new Error('無法取得 ID token。');
+      
       const response = await fetch(`/api/reserve/${reserveId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-        },
+        headers: { 'Authorization': `Bearer ${idToken}` },
       });
 
-      if (!response.ok) {
-        throw new Error('取消預約失敗。');
-      }
+      if (!response.ok) throw new Error('取消預約失敗。');
 
       setReservations((prev) => prev.filter((r) => r.id !== reserveId));
+      toast.success('預約已取消');
     } catch (err) {
       alert(err instanceof Error ? err.message : '發生未知錯誤。');
     }
+  };
+
+  const handleEditClick = (reserve: ReserveWithServices) => {
+      setEditingReserve(reserve);
+      setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateReservation = async (id: number, data: any, messageData?: any) => {
+      try {
+          const idToken = liff.getIDToken();
+          if (!idToken) throw new Error('無法取得 ID token');
+          
+          const response = await fetch(`/api/reserve/${id}`, {
+              method: 'PUT',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${idToken}` 
+              },
+              body: JSON.stringify(data)
+          });
+
+          if (!response.ok) {
+              const errData = await response.json();
+              throw new Error(errData.message || '更新失敗');
+          }
+
+          toast.success('預約更新成功！');
+          
+          if (messageData) {
+             await sendUpdateLineMessage(messageData);
+          }
+
+          fetchReservations();
+      } catch (err) {
+          toast.error(err instanceof Error ? err.message : '更新失敗');
+          throw err; 
+      }
   };
 
   if (isLoading) {
@@ -203,9 +251,23 @@ export default function RecordPage() {
       ) : (
         <div className="space-y-4">
           {reservations.map((reserve) => (
-            <ReservationCard key={reserve.id} reserve={reserve} onCancel={handleCancelReservation} />
+            <ReservationCard 
+                key={reserve.id} 
+                reserve={reserve} 
+                onCancel={handleCancelReservation} 
+                onEdit={handleEditClick}
+            />
           ))}
         </div>
+      )}
+
+      {editingReserve && (
+        <EditReservationDialog 
+            isOpen={isEditDialogOpen}
+            onClose={() => setIsEditDialogOpen(false)}
+            reserve={editingReserve}
+            onUpdate={handleUpdateReservation}
+        />
       )}
     </div>
   );

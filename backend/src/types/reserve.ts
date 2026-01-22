@@ -17,6 +17,7 @@ export interface CreateReserveDTO {
     license: string;
     serviceIds: number[];
     userMemo?: string;
+    date: string;
 }
 
 export interface UpdateReserveDTO {
@@ -24,4 +25,7 @@ export interface UpdateReserveDTO {
     adminMemo?: string;
     timeSlotId?: number;
     license?: string;
+    date?: string;
+    serviceIds?: number[];
+    userMemo?: string;
 }

@@ -44,7 +44,11 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
         throw new ValidationError("預約時段不存在或已停用");
     }
 
-    const reserveCount = await reserveModel.countActiveReservesByTimeSlot(data.timeSlotId);
+    if (!data.date || isNaN(Date.parse(data.date))) {
+        throw new ValidationError("無效的預約日期");
+    }
+
+    const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date);
     const capacity = timeSlot.capacity ?? 1;
     if (reserveCount >= capacity) {
         throw new ValidationError("此時段已額滿");
@@ -79,25 +83,52 @@ export const updateReserve = async (
         throw new NotFoundError("找不到此預約");
     }
 
-    // 權限檢查：Customer 只能取消自己的預約 (未實作，目前統一由 update 處理，但可加入邏輯)
+    // 權限檢查：Customer 只能取消自己的預約 或 修改未來的預約 -- 但這由 Controller 層級控制身分驗證，這裡只檢查 ID 匹配
+    // 這裡我們允許 Customer 修改自己的預約 details
     if (role === UserRole.CUSTOMER && existingReserve.userId !== currentUserId) {
         throw new ValidationError("您無權修改此預約");
     }
 
-    if (data.timeSlotId) {
-        const timeSlot = await timeSlotModel.getTimeSlotById(data.timeSlotId);
-        if (!timeSlot || !timeSlot.isActive) {
-            throw new ValidationError("預約時段不存在或已停用");
-        }
-
-        if (data.timeSlotId !== existingReserve.timeSlotId) {
-            const reserveCount = await reserveModel.countActiveReservesByTimeSlot(data.timeSlotId);
-            const capacity = timeSlot.capacity ?? 1;
-            if (reserveCount >= capacity) {
-                throw new ValidationError("此時段已額滿");
+    // 檢查日期或時段是否變更
+    const isTimeChanged = data.timeSlotId || data.date;
+    
+    if (isTimeChanged) {
+        const newTimeSlotId = data.timeSlotId ?? existingReserve.timeSlotId;
+        const newDateStr = data.date ?? existingReserve.date.toISOString().split('T')[0];
+        
+        // 如果變更了時段ID，檢查時段是否存在
+        if (data.timeSlotId) {
+             const timeSlot = await timeSlotModel.getTimeSlotById(data.timeSlotId);
+            if (!timeSlot || !timeSlot.isActive) {
+                throw new ValidationError("預約時段不存在或已停用");
             }
         }
 
+        // 檢查新時段是否額滿 (如果是改到不同時段或不同天)
+        // 注意：如果只是改服務(沒改時間)，不會進這裡
+        const isTimeActuallyChanged = newTimeSlotId !== existingReserve.timeSlotId || 
+                                     (data.date && new Date(data.date).getTime() !== new Date(existingReserve.date).getTime());
+
+        if (isTimeActuallyChanged) {
+             const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(newTimeSlotId, newDateStr);
+            
+             // 再次取得時段 capactiy (剛才可能沒取)
+             // 為了效能，我們可以只在 ID 變更時取，但這裡為了保險起見，如果是日期變更但 ID 沒變，也要知道 capacity
+             let capacity = 1;
+             if (data.timeSlotId) {
+                 // 有傳 ID，前面已經檢查並可取得 (雖然前面沒 return timeSlot) -> 為了簡化，直接再取一次或優化流程
+                 const ts = await timeSlotModel.getTimeSlotById(newTimeSlotId);
+                 capacity = ts?.capacity ?? 1;
+             } else {
+                 // 沒傳 ID (只改日期)，用舊 ID 查 capacity
+                 const ts = await timeSlotModel.getTimeSlotById(existingReserve.timeSlotId);
+                 capacity = ts?.capacity ?? 1;
+             }
+
+             if (reserveCount >= capacity) {
+                 throw new ValidationError("該時段已額滿");
+             }
+        }
     }
 
     return reserveModel.updateReserve(id, data);

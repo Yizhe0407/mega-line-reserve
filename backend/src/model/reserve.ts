@@ -74,12 +74,13 @@ export const getReserveById = (id: number) => {
 
 // 建立預約
 export const createReserve = (userId: number, data: CreateReserveDTO) => {
-    const { timeSlotId, license, serviceIds, userMemo } = data;
+    const { timeSlotId, license, serviceIds, userMemo, date } = data;
     
     return prisma.reserve.create({
         data: {
             userId,
             timeSlotId,
+            date: new Date(date),
             license,
             userMemo,
             services: {
@@ -103,15 +104,43 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
 
 // 更新預約 (狀態或管理端備註)
 export const updateReserve = (id: number, data: UpdateReserveDTO) => {
-    const { status, adminMemo, license, timeSlotId } = data;
+    const { status, adminMemo, license, timeSlotId, date, userMemo, serviceIds } = data;
     
+    // 準備更新資料物件
+    const updateData: any = {
+        status,
+        adminMemo,
+        timeSlotId,
+        license,
+        userMemo
+    };
+
+    if (date) {
+        updateData.date = new Date(date);
+    }
+
+    // 如果有傳入 serviceIds，則先刪除舊關聯再建立新關聯
+    if (serviceIds) {
+        updateData.services = {
+            deleteMany: {}, // 刪除舊的所有服務
+            create: serviceIds.map(serviceId => ({
+                service: {
+                    connect: { id: serviceId }
+                }
+            }))
+        };
+    }
+
     return prisma.reserve.update({
         where: { id },
-        data: {
-            status,
-            adminMemo,
-            timeSlotId,
-            license
+        data: updateData, // 使用動態構建的 data 物件
+        include: { // 確保回傳資料包含關聯
+            services: {
+                include: {
+                    service: true
+                }
+            },
+            timeSlot: true
         }
     });
 };
@@ -123,10 +152,12 @@ export const deleteReserve = (id: number) => {
     });
 };
 
-export const countActiveReservesByTimeSlot = (timeSlotId: number) => {
+export const countActiveReservesByTimeSlotAndDate = (timeSlotId: number, date: string) => {
+    const targetDate = new Date(date);
     return prisma.reserve.count({
         where: {
             timeSlotId,
+            date: targetDate,
             status: {
                 not: ReserveStatus.CANCELLED
             }

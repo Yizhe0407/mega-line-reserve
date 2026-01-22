@@ -20,6 +20,7 @@ export interface Reserve {
   adminMemo?: string;
   createdAt: string;
   updatedAt: string;
+  date: string;
 }
 
 export interface CreateReserveDTO {
@@ -27,6 +28,7 @@ export interface CreateReserveDTO {
   license: string;
   serviceIds: number[];
   userMemo?: string;
+  date: string;
 }
 
 export interface UpdateReserveDTO {

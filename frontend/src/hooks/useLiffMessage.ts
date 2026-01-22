@@ -215,5 +215,145 @@ export function useLiffMessage() {
         }
     };
 
-    return { sendLineMessage };
+    const sendUpdateLineMessage = async (data: { 
+        date: string; 
+        time: string; 
+        license: string; 
+        serviceNames: string[];
+    }) => {
+        try {
+            const flexMessage: LiffMessage = {
+                type: "flex",
+                altText: "預約更新通知",
+                contents: {
+                    type: "bubble",
+                    body: {
+                        type: "box",
+                        layout: "vertical",
+                        contents: [
+                            {
+                                type: "text",
+                                text: "更新預約",
+                                weight: "bold",
+                                size: "xxl",
+                                margin: "md",
+                                color: "#00B900" 
+                            },
+                            {
+                                type: "text",
+                                text: "您的預約已成功更新",
+                                size: "xs",
+                                color: "#aaaaaa",
+                                margin: "sm"
+                            },
+                            {
+                                type: "separator",
+                                margin: "xxl"
+                            },
+                            {
+                                type: "box",
+                                layout: "vertical",
+                                margin: "xxl",
+                                spacing: "sm",
+                                contents: [
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: "日期 Date",
+                                                size: "md",
+                                                color: "#555555",
+                                                flex: 0
+                                            },
+                                            {
+                                                type: "text",
+                                                text: data.date,
+                                                size: "md",
+                                                color: "#111111",
+                                                align: "end"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: "時間 Time",
+                                                size: "md",
+                                                color: "#555555",
+                                                flex: 0
+                                            },
+                                            {
+                                                type: "text",
+                                                text: data.time,
+                                                size: "md",
+                                                color: "#111111",
+                                                align: "end"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: "separator",
+                                        margin: "xxl"
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "horizontal",
+                                        margin: "xxl",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: "車牌號碼 License",
+                                                size: "md",
+                                                color: "#555555"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: data.license,
+                                                size: "md",
+                                                color: "#111111",
+                                                align: "end"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: "box",
+                                        layout: "vertical",
+                                        contents: [
+                                            {
+                                                type: "text",
+                                                text: "服務項目 Services",
+                                                size: "md",
+                                                color: "#555555"
+                                            },
+                                            {
+                                                type: "text",
+                                                text: data.serviceNames.join('、'),
+                                                size: "md",
+                                                color: "#111111",
+                                                align: "end",
+                                                wrap: true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            };
+
+            await liff.sendMessages([flexMessage]);
+            return true;
+        } catch (error) {
+            console.error('LINE 訊息發送失敗:', error);
+            return false;
+        }
+    };
+
+    return { sendLineMessage, sendUpdateLineMessage };
 }
