@@ -1,23 +1,22 @@
 import { useState, useCallback } from "react";
-import type { TimeSlot } from "@/types/timeSlot";
 
-export function useDeleteConfirmDialog() {
+export function useDeleteConfirmDialog<T = any>() {
   const [isOpen, setIsOpen] = useState(false);
-  const [slotToDelete, setSlotToDelete] = useState<TimeSlot | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<T | null>(null);
 
-  const openDialog = useCallback((slot: TimeSlot) => {
-    setSlotToDelete(slot);
+  const openDialog = useCallback((item: T) => {
+    setItemToDelete(item);
     setIsOpen(true);
   }, []);
 
   const closeDialog = useCallback(() => {
     setIsOpen(false);
-    setSlotToDelete(null);
+    setItemToDelete(null);
   }, []);
 
   return {
     isOpen,
-    slotToDelete,
+    itemToDelete,
     setIsOpen,
     openDialog,
     closeDialog,

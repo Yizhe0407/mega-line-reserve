@@ -118,10 +118,10 @@ export default function TimeSlotAdminPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteDialog.slotToDelete) return;
+    if (!deleteDialog.itemToDelete) return;
     try {
       setSlotsError(null);
-      await deleteTimeSlot(deleteDialog.slotToDelete.id);
+      await deleteTimeSlot(deleteDialog.itemToDelete.id);
       deleteDialog.closeDialog();
       toast.success("時段已刪除");
     } catch (err) {
@@ -233,7 +233,7 @@ export default function TimeSlotAdminPage() {
       <DeleteConfirmDialog
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.setIsOpen}
-        slot={deleteDialog.slotToDelete}
+        slot={deleteDialog.itemToDelete}
         weekdays={WEEKDAYS}
         onConfirm={handleDelete}
       />
