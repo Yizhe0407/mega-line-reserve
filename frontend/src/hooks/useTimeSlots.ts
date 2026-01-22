@@ -143,8 +143,6 @@ export function useTimeSlots() {
           const failures = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
           if (failures.length > 0) {
             console.warn(`複製到週 ${targetDay} 時發生 ${failures.length} 個錯誤`, failures);
-            // 可以在這裡決定是否要拋出錯誤，或者視為部分成功
-            // 如果用戶說「不需要這個（錯誤訊息）」，我們可以選擇忽略重複的錯誤
           }
         }
 
