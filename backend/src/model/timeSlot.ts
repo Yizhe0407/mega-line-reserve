@@ -41,6 +41,15 @@ export const getTimeSlotById = (id: number) => {
     });
 };
 
+export const getTimeSlotByDayAndTime = (dayOfWeek: number, startTime: string) => {
+    return prisma.timeSlot.findFirst({
+        where: {
+            dayOfWeek,
+            startTime
+        }
+    });
+};
+
 export const createTimeSlot = (data: { dayOfWeek: number; startTime: string; capacity: number; isActive: boolean }) => {
     return prisma.timeSlot.create({
         data

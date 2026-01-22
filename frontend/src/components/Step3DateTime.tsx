@@ -4,7 +4,7 @@ import ProgressBar from "./ProgressBar";
 import { zhTW } from 'date-fns/locale';
 import { useState, useEffect, useMemo } from "react"
 import { isPastTime } from "@/lib/handleTime"
-import { get } from "@/lib/api/core/fetch-wrapper"
+import { timeSlot as timeSlotApi } from "@/lib/api"
 import StepButtonGroup from "./StepButtonGroup"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -21,7 +21,7 @@ export default function Step3DateTime() {
   useEffect(() => {
     const getTimeSlots = async () => {
       try {
-        const data = await get<TimeSlot[]>('/api/time-slot/active');
+        const data = await timeSlotApi.getActiveTimeSlots();
         // 確保回傳的是陣列
         setTimeSlots(Array.isArray(data) ? data : []);
       } catch (error) {

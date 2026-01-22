@@ -1,5 +1,7 @@
 "use client";
 
+import toast from "react-hot-toast";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import liff from "@line/liff";
@@ -7,10 +9,14 @@ import { ensureLiffInit } from "@/lib/liff";
 import { auth, timeSlot as timeSlotApi } from "@/lib/api";
 import type { TimeSlot } from "@/types/timeSlot";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,8 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus, X, Copy, Trash2 } from "lucide-react";
 
 const WEEKDAYS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+// 生成時間選項 (7:00 ~ 18:00，每 30 分鐘一個時段)
+const TIME_OPTIONS = Array.from({ length: 23 }, (_, i) => {
+  const totalMinutes = 7 * 60 + i * 30; // 從 7:00 開始
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+});
 
 export default function TimeSlotAdminPage() {
   const router = useRouter();
@@ -28,16 +43,23 @@ export default function TimeSlotAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [formDayOfWeek, setFormDayOfWeek] = useState<string>("");
-  const [formTime, setFormTime] = useState("");
-  const [formCapacity, setFormCapacity] = useState(1);
-  const [formIsActive, setFormIsActive] = useState(true);
+  // Dialog 狀態
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState<number>(0);
+  const [dialogTimes, setDialogTimes] = useState<string[]>([]); // 改為陣列支援多選
+  const [dialogCapacity, setDialogCapacity] = useState(1);
 
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editDayOfWeek, setEditDayOfWeek] = useState<number>(0);
-  const [editTime, setEditTime] = useState("");
-  const [editCapacity, setEditCapacity] = useState(1);
-  const [editIsActive, setEditIsActive] = useState(true);
+  // 編輯狀態
+  const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
+
+  // 複製狀態
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [copySourceDay, setCopySourceDay] = useState<number>(0);
+  const [copyTargetDays, setCopyTargetDays] = useState<number[]>([]);
+
+  // 刪除確認狀態
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [slotToDelete, setSlotToDelete] = useState<TimeSlot | null>(null);
 
   // 按星期分組時段
   const groupedSlots = useMemo(() => {
@@ -95,9 +117,49 @@ export default function TimeSlotAdminPage() {
     init();
   }, []);
 
-  const handleCreate = async () => {
-    if (!formDayOfWeek || !formTime) {
-      setError("請選擇星期和時間");
+  const openAddDialog = (dayOfWeek: number) => {
+    setSelectedDayOfWeek(dayOfWeek);
+    setDialogTimes([]); // 新增模式清空選擇
+    setDialogCapacity(1);
+    setEditingSlot(null);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (slot: TimeSlot) => {
+    setSelectedDayOfWeek(slot.dayOfWeek);
+    setDialogTimes([slot.startTime]); // 編輯模式只有單一時間
+    setDialogCapacity(slot.capacity);
+    setEditingSlot(slot);
+    setIsDialogOpen(true);
+  };
+
+  const toggleTimeSelection = (time: string) => {
+    if (editingSlot) {
+      // 編輯模式只能選一個
+      setDialogTimes([time]);
+    } else {
+      // 新增模式可多選
+      setDialogTimes((prev) =>
+        prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+      );
+    }
+  };
+
+  const openCopyDialog = (sourceDay: number) => {
+    setCopySourceDay(sourceDay);
+    setCopyTargetDays([]);
+    setIsCopyDialogOpen(true);
+  };
+
+  const toggleTargetDay = (day: number) => {
+    setCopyTargetDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const handleCopySlots = async () => {
+    if (copyTargetDays.length === 0) {
+      setError("請選擇至少一個目標日期");
       return;
     }
     try {
@@ -106,36 +168,49 @@ export default function TimeSlotAdminPage() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await timeSlotApi.createTimeSlot(
-        {
-          dayOfWeek: Number(formDayOfWeek),
-          startTime: formTime,
-          capacity: formCapacity,
-          isActive: formIsActive,
-        },
-        idToken
-      );
-      setFormDayOfWeek("");
-      setFormTime("");
-      setFormCapacity(1);
-      setFormIsActive(true);
+
+      const sourceSlots = groupedSlots[copySourceDay] || [];
+      if (sourceSlots.length === 0) {
+        setError("來源日期沒有時段可複製");
+        return;
+      }
+
+      // 對每個目標日期執行複製
+      for (const targetDay of copyTargetDays) {
+        // 1. 刪除目標日期的所有時段
+        const targetSlots = groupedSlots[targetDay] || [];
+        await Promise.all(
+          targetSlots.map((slot) => timeSlotApi.deleteTimeSlot(slot.id, idToken))
+        );
+
+        // 2. 複製來源日期的時段到目標日期
+        await Promise.all(
+          sourceSlots.map((slot) =>
+            timeSlotApi.createTimeSlot(
+              {
+                dayOfWeek: targetDay,
+                startTime: slot.startTime,
+                capacity: slot.capacity,
+                isActive: slot.isActive,
+              },
+              idToken
+            )
+          )
+        );
+      }
+
+      setIsCopyDialogOpen(false);
       await loadTimeSlots(idToken);
+      toast.success(`已複製到 ${copyTargetDays.length} 天`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "建立失敗");
+      setError(err instanceof Error ? err.message : "複製失敗");
+      toast.error(err instanceof Error ? err.message : "複製失敗");
     }
   };
 
-  const handleEdit = (slot: TimeSlot) => {
-    setEditingId(slot.id);
-    setEditDayOfWeek(slot.dayOfWeek);
-    setEditTime(slot.startTime);
-    setEditCapacity(slot.capacity);
-    setEditIsActive(slot.isActive);
-  };
-
-  const handleUpdate = async () => {
-    if (!editingId || !editTime) {
-      setError("請填寫完整資訊");
+  const handleDialogSubmit = async () => {
+    if (dialogTimes.length === 0) {
+      setError("請選擇至少一個時間");
       return;
     }
     try {
@@ -144,25 +219,60 @@ export default function TimeSlotAdminPage() {
       if (!idToken) {
         throw new Error("無法取得 ID token");
       }
-      await timeSlotApi.updateTimeSlot(
-        editingId,
-        {
-          dayOfWeek: editDayOfWeek,
-          startTime: editTime,
-          capacity: editCapacity,
-          isActive: editIsActive,
-        },
-        idToken
-      );
-      setEditingId(null);
-      await loadTimeSlots(idToken);
+
+      if (editingSlot) {
+        // 更新（只會有一個時間）
+        await timeSlotApi.updateTimeSlot(
+          editingSlot.id,
+          {
+            dayOfWeek: selectedDayOfWeek,
+            startTime: dialogTimes[0],
+            capacity: dialogCapacity,
+            isActive: editingSlot.isActive,
+          },
+          idToken
+        );
+        setIsDialogOpen(false);
+        await loadTimeSlots(idToken);
+        toast.success("時段已更新");
+      } else {
+        // 新增（可能有多個時間）
+        const results = await Promise.allSettled(
+          dialogTimes.map((time) =>
+            timeSlotApi.createTimeSlot(
+              {
+                dayOfWeek: selectedDayOfWeek,
+                startTime: time,
+                capacity: dialogCapacity,
+                isActive: true,
+              },
+              idToken
+            )
+          )
+        );
+
+        const successCount = results.filter((r) => r.status === "fulfilled").length;
+        const failedCount = results.filter((r) => r.status === "rejected").length;
+
+        setIsDialogOpen(false);
+        await loadTimeSlots(idToken);
+
+        if (failedCount === 0) {
+          toast.success(`已新增 ${successCount} 個時段`);
+        } else if (successCount === 0) {
+          const firstError = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+          toast.error(firstError.reason?.message || "新增失敗");
+        } else {
+          toast.success(`已新增 ${successCount} 個時段，${failedCount} 個失敗（可能已存在）`);
+        }
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "更新失敗");
+      setError(err instanceof Error ? err.message : "操作失敗");
+      toast.error(err instanceof Error ? err.message : "操作失敗");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("確定要刪除此時段嗎？")) return;
     try {
       setError(null);
       const idToken = liff.getIDToken();
@@ -170,9 +280,46 @@ export default function TimeSlotAdminPage() {
         throw new Error("無法取得 ID token");
       }
       await timeSlotApi.deleteTimeSlot(id, idToken);
+      setIsDeleteDialogOpen(false);
+      setSlotToDelete(null);
       await loadTimeSlots(idToken);
+      toast.success("時段已刪除");
     } catch (err) {
       setError(err instanceof Error ? err.message : "刪除失敗");
+      toast.error(err instanceof Error ? err.message : "刪除失敗");
+    }
+  };
+
+  const openDeleteDialog = (slot: TimeSlot) => {
+    setSlotToDelete(slot);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const toggleActive = async (slot: TimeSlot) => {
+    try {
+      setError(null);
+      const idToken = liff.getIDToken();
+      if (!idToken) {
+        throw new Error("無法取得 ID token");
+      }
+      const newIsActive = !slot.isActive;
+      await timeSlotApi.updateTimeSlot(
+        slot.id,
+        {
+          dayOfWeek: slot.dayOfWeek,
+          startTime: slot.startTime,
+          capacity: slot.capacity,
+          isActive: newIsActive,
+        },
+        idToken
+      );
+      // 立即更新 editingSlot 狀態
+      setEditingSlot({ ...slot, isActive: newIsActive });
+      await loadTimeSlots(idToken);
+      toast.success(slot.isActive ? "時段已停用" : "時段已啟用");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "更新失敗");
+      toast.error(err instanceof Error ? err.message : "更新失敗");
     }
   };
 
@@ -209,178 +356,237 @@ export default function TimeSlotAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>新增時段</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert>
-                <AlertTitle>錯誤</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">星期</label>
-                <Select value={formDayOfWeek} onValueChange={setFormDayOfWeek}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="選擇星期" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WEEKDAYS.map((day, index) => (
-                      <SelectItem key={index} value={String(index)}>
-                        {day}
-                      </SelectItem>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-7xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold">時段管理</h1>
+
+        {error && (
+          <Alert>
+            <AlertTitle>錯誤</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* 週曆視圖 */}
+        <div className="border rounded-lg overflow-hidden">
+          {/* 星期標題 */}
+          <div className="grid grid-cols-7 border-b bg-muted/50">
+            {WEEKDAYS.map((day, index) => (
+              <div
+                key={index}
+                className="p-2 text-center font-semibold border-r last:border-r-0 flex items-center justify-center gap-2"
+              >
+                <span>{day}</span>
+                {(groupedSlots[index]?.length || 0) > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => openCopyDialog(index)}
+                    title="複製此天的時段"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 時段內容 */}
+          <div className="grid grid-cols-7">
+            {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
+              const slots = groupedSlots[dayIndex] || [];
+              return (
+                <div
+                  key={dayIndex}
+                  className="border-r last:border-r-0 min-h-[400px] p-2 space-y-2 flex flex-col"
+                >
+                  {/* 時段列表 */}
+                  <div className="flex-1 space-y-2">
+                    {slots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className={`p-2 rounded border text-xs cursor-pointer transition-colors ${
+                          slot.isActive
+                            ? "bg-primary/10 border-primary/30 hover:bg-primary/20"
+                            : "bg-muted border-muted-foreground/30 opacity-60"
+                        }`}
+                        onClick={() => openEditDialog(slot)}
+                      >
+                        <div className="font-semibold">{slot.startTime}</div>
+                        <div className="text-muted-foreground">
+                          容量: {slot.capacity}
+                        </div>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">時間</label>
-                <Input
-                  type="time"
-                  value={formTime}
-                  onChange={(e) => setFormTime(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">容量</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={formCapacity}
-                  onChange={(e) => setFormCapacity(Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">啟用</label>
-                <div className="flex items-center gap-2 h-10">
-                  <Checkbox
-                    checked={formIsActive}
-                    onCheckedChange={(checked) => setFormIsActive(checked === true)}
-                  />
-                  <span className="text-sm">可預約</span>
+                  </div>
+
+                  {/* 新增按鈕 */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => openAddDialog(dayIndex)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 新增/編輯 Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingSlot ? "編輯時段" : "新增時段"} - {WEEKDAYS[selectedDayOfWeek]}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                時間 {!editingSlot && dialogTimes.length > 0 && `(已選 ${dialogTimes.length} 個)`}
+              </label>
+              <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1">
+                {TIME_OPTIONS.map((time) => (
+                  <Button
+                    key={time}
+                    type="button"
+                    variant={dialogTimes.includes(time) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTimeSelection(time)}
+                    className="h-9"
+                  >
+                    {time}
+                  </Button>
+                ))}
               </div>
             </div>
-            <Button onClick={handleCreate}>新增</Button>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">容量</label>
+              <Select
+                value={String(dialogCapacity)}
+                onValueChange={(v) => setDialogCapacity(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={String(num)}>
+                      {num} 人
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleDialogSubmit} className="flex-1">
+                {editingSlot ? "儲存" : "新增"}
+              </Button>
+              {editingSlot && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleActive(editingSlot)}
+                  >
+                    {editingSlot.isActive ? "停用" : "啟用"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setIsDialogOpen(false);
+                      openDeleteDialog(editingSlot);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>時段列表</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {Object.keys(groupedSlots).length === 0 ? (
-              <div className="text-sm text-muted-foreground">尚無時段</div>
-            ) : (
-              <div className="space-y-6">
-                {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
-                  const slots = groupedSlots[dayIndex];
-                  if (!slots || slots.length === 0) return null;
-                  
-                  return (
-                    <div key={dayIndex} className="space-y-3">
-                      <h3 className="font-semibold text-lg border-b pb-2">
-                        {WEEKDAYS[dayIndex]}
-                      </h3>
-                      <div className="space-y-2">
-                        {slots.map((slot) => (
-                          <div
-                            key={slot.id}
-                            className="border rounded-lg p-3 flex items-center justify-between"
-                          >
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium">
-                                {slot.startTime}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                容量：{slot.capacity} ｜ 狀態：{slot.isActive ? "啟用" : "停用"}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleEdit(slot)}>
-                                編輯
-                              </Button>
-                              <Button variant="destructive" size="sm" onClick={() => handleDelete(slot.id)}>
-                                刪除
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+      {/* 複製時段 Dialog */}
+      <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              複製時段 - {WEEKDAYS[copySourceDay]}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm text-muted-foreground">
+              將 {WEEKDAYS[copySourceDay]} 的 {groupedSlots[copySourceDay]?.length || 0} 個時段複製到：
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {WEEKDAYS.map((day, index) => (
+                <Button
+                  key={index}
+                  type="button"
+                  variant={copyTargetDays.includes(index) ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleTargetDay(index)}
+                  disabled={index === copySourceDay}
+                  className="h-10"
+                >
+                  {day}
+                </Button>
+              ))}
+            </div>
+            <div className="text-sm text-amber-600 dark:text-amber-500">
+              ⚠️ 目標日期的所有時段將被覆蓋
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleCopySlots} className="flex-1">
+                確認複製 {copyTargetDays.length > 0 && `到 ${copyTargetDays.length} 天`}
+              </Button>
+              <Button variant="outline" onClick={() => setIsCopyDialogOpen(false)}>
+                取消
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 刪除確認 Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>確認刪除</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {slotToDelete && (
+              <div className="text-sm">
+                確定要刪除 <span className="font-semibold">{WEEKDAYS[slotToDelete.dayOfWeek]}</span> 的{" "}
+                <span className="font-semibold">{slotToDelete.startTime}</span> 時段嗎？
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {editingId && (
-          <Card>
-            <CardHeader>
-              <CardTitle>編輯時段</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">星期</label>
-                  <Select value={String(editDayOfWeek)} onValueChange={(v: string) => setEditDayOfWeek(Number(v))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {WEEKDAYS.map((day, index) => (
-                        <SelectItem key={index} value={String(index)}>
-                          {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">時間</label>
-                  <Input
-                    type="time"
-                    value={editTime}
-                    onChange={(e) => setEditTime(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">容量</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={editCapacity}
-                    onChange={(e) => setEditCapacity(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">啟用</label>
-                  <div className="flex items-center gap-2 h-10">
-                    <Checkbox
-                      checked={editIsActive}
-                      onCheckedChange={(checked) => setEditIsActive(checked === true)}
-                    />
-                    <span className="text-sm">可預約</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleUpdate}>儲存</Button>
-                <Button variant="outline" onClick={() => setEditingId(null)}>
-                  取消
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="destructive"
+                onClick={() => slotToDelete && handleDelete(slotToDelete.id)}
+                className="flex-1"
+              >
+                確認刪除
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setSlotToDelete(null);
+                }}
+              >
+                取消
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

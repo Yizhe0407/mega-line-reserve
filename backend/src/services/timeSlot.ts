@@ -55,6 +55,12 @@ export const createTimeSlot = async (data: CreateTimeSlotDTO) => {
         throw new ValidationError("容量必須大於 0");
     }
 
+    // 檢查是否已存在相同的時段
+    const existing = await timeSlotModel.getTimeSlotByDayAndTime(data.dayOfWeek, data.startTime);
+    if (existing) {
+        throw new ValidationError(`此時段已存在 (${["週日", "週一", "週二", "週三", "週四", "週五", "週六"][data.dayOfWeek]} ${data.startTime})`);
+    }
+
     return timeSlotModel.createTimeSlot({
         dayOfWeek: data.dayOfWeek,
         startTime: data.startTime,
@@ -84,6 +90,17 @@ export const updateTimeSlot = async (idParam: string | string[], data: UpdateTim
 
     if (data.capacity !== undefined && data.capacity <= 0) {
         throw new ValidationError("容量必須大於 0");
+    }
+
+    // 如果更新了 dayOfWeek 或 startTime，檢查是否與其他時段重複
+    if (data.dayOfWeek !== undefined || data.startTime !== undefined) {
+        const newDayOfWeek = data.dayOfWeek ?? existing.dayOfWeek;
+        const newStartTime = data.startTime ?? existing.startTime;
+        
+        const duplicate = await timeSlotModel.getTimeSlotByDayAndTime(newDayOfWeek, newStartTime);
+        if (duplicate && duplicate.id !== id) {
+            throw new ValidationError(`此時段已存在 (${["週日", "週一", "週二", "週三", "週四", "週五", "週六"][newDayOfWeek]} ${newStartTime})`);
+        }
     }
 
     return timeSlotModel.updateTimeSlot(id, data);
