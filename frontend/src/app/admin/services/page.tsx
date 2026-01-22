@@ -3,13 +3,23 @@
 import toast from "react-hot-toast";
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Plus } from "lucide-react";
 import { ServiceCard } from "@/components/admin/services/ServiceCard";
-import { ServiceDialog } from "@/components/admin/services/ServiceDialog";
-import { ServiceDeleteDialog } from "@/components/admin/services/ServiceDeleteDialog";
+const ServiceDialog = dynamic(
+  () => import("@/components/admin/services/ServiceDialog").then((mod) => mod.ServiceDialog),
+  { ssr: false }
+);
+const ServiceDeleteDialog = dynamic(
+  () =>
+    import("@/components/admin/services/ServiceDeleteDialog").then(
+      (mod) => mod.ServiceDeleteDialog
+    ),
+  { ssr: false }
+);
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useServices } from "@/hooks/useServices";
 import { useServiceDialog } from "@/hooks/useServiceDialog";

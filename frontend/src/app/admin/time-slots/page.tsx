@@ -3,13 +3,26 @@
 import toast from "react-hot-toast";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WeeklyCalendarView } from "@/components/admin/time-slots/WeeklyCalendarView";
-import { TimeSlotDialog } from "@/components/admin/time-slots/TimeSlotDialog";
-import { CopySlotDialog } from "@/components/admin/time-slots/CopySlotDialog";
-import { DeleteConfirmDialog } from "@/components/admin/time-slots/DeleteConfirmDialog";
+const TimeSlotDialog = dynamic(
+  () => import("@/components/admin/time-slots/TimeSlotDialog").then((mod) => mod.TimeSlotDialog),
+  { ssr: false }
+);
+const CopySlotDialog = dynamic(
+  () => import("@/components/admin/time-slots/CopySlotDialog").then((mod) => mod.CopySlotDialog),
+  { ssr: false }
+);
+const DeleteConfirmDialog = dynamic(
+  () =>
+    import("@/components/admin/time-slots/DeleteConfirmDialog").then(
+      (mod) => mod.DeleteConfirmDialog
+    ),
+  { ssr: false }
+);
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useTimeSlots } from "@/hooks/useTimeSlots";
 import { useTimeSlotDialog } from "@/hooks/useTimeSlotDialog";

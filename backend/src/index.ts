@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
@@ -30,6 +31,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

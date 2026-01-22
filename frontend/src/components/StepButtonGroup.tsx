@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
+import { useShallow } from "zustand/react/shallow";
 import { useLiffMessage } from "@/hooks/useLiffMessage";
 import { createReserve } from "@/lib/api/endpoints/reserve";
 
@@ -19,7 +20,8 @@ export default function StepButtonGroup({
     step1Data,
     step2Data,
     step3Data,
-  } = useStepStore((state) => ({
+  } = useStepStore(
+    useShallow((state) => ({
     currentStep: state.currentStep,
     prevStep: state.prevStep,
     nextStep: state.nextStep,
@@ -27,7 +29,8 @@ export default function StepButtonGroup({
     step1Data: state.step1Data,
     step2Data: state.step2Data,
     step3Data: state.step3Data,
-  }));
+    }))
+  );
   const FIRST_STEP = 1;
   const TOTAL_STEP = 4;
   const router = useRouter();
