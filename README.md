@@ -27,16 +27,6 @@ cp .env.example .env
 ```bash
 docker compose -f docker-compose.dev.yml down -v
 docker compose -f docker-compose.dev.yml up -d --build
-
-
-# 啟動開發環境
-docker compose -f docker-compose.dev.yml up -d
-
-# 查看即時 log
-docker compose -f docker-compose.dev.yml logs -f frontend backend
-
-# 停止開發環境
-docker compose -f docker-compose.dev.yml down
 ```
 
 > 💡 修改 `frontend/` 或 `backend/` 中的程式碼會自動觸發熱重載，不需要重啟容器！
