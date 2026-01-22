@@ -10,7 +10,7 @@ import { useStepStore } from "@/store/step-store"
 import { Calendar } from "@/components/ui/calendar"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { TimeSlot } from "@/types/timeSlot"
+import type { TimeSlot } from "@/types"
 
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data)

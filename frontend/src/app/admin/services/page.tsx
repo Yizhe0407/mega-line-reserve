@@ -14,7 +14,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useServices } from "@/hooks/useServices";
 import { useServiceDialog } from "@/hooks/useServiceDialog";
 import { useDeleteConfirmDialog } from "@/hooks/useDeleteConfirmDialog";
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 export default function ServiceAdminPage() {
   const router = useRouter();

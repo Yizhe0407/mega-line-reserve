@@ -10,7 +10,7 @@ import StepButtonGroup from "./StepButtonGroup";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import type { Service } from "@/types/service"
+import type { Service } from "@/types"
 
 
 export default function Step2ServiceSelect() {

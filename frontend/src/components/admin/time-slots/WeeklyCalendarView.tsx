@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Plus, ChevronDown, ChevronUp } from "lucide-react";
-import type { TimeSlot } from "@/types/timeSlot";
+import type { TimeSlot } from "@/types";
 import { TimeSlotCard } from "./TimeSlotCard";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 

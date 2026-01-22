@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 export default function Step4Confirm() {
   const step1Data = useStepStore((state) => state.step1Data)

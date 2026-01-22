@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import liff from "@line/liff";
 import { service as serviceApi } from "@/lib/api";
-import type { Service, CreateServiceDTO, UpdateServiceDTO } from "@/types/service";
+import type { Service, CreateServiceDTO, UpdateServiceDTO } from "@/types";
 
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);

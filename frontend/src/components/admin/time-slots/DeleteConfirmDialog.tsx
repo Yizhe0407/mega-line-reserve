@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import type { TimeSlot } from "@/types/timeSlot";
+import type { TimeSlot } from "@/types";
 
 interface DeleteConfirmDialogProps {
   open: boolean;

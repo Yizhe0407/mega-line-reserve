@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
-import type { TimeSlot } from "@/types/timeSlot";
+import type { TimeSlot } from "@/types";
 
 interface TimeSlotDialogProps {
   open: boolean;

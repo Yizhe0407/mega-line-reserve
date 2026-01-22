@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 interface ServiceDeleteDialogProps {
   open: boolean;

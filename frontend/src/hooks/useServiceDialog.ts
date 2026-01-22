@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 export function useServiceDialog() {
   const [isOpen, setIsOpen] = useState(false);

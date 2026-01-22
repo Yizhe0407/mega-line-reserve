@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 interface ServiceDialogProps {
   open: boolean;

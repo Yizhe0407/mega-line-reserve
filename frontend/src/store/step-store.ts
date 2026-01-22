@@ -1,25 +1,5 @@
 import { create } from 'zustand'
-import type { Service } from '@/types/service';
-
-interface Step1Data {
-  pictureUrl?: string;
-  name?: string;
-  phone?: string;
-  license?: string;
-}
-
-interface Step2Data {
-  selectServe: number[];
-  otherService: string;
-  extra: boolean;
-  isOtherServiceSelected: boolean;
-}
-
-interface Step3Data {
-  date: string;
-  time: string;
-  timeSlotId: number | null;
-}
+import type { Service, Step1Data, Step2Data, Step3Data } from '@/types';
 
 interface StepStore {
   currentStep: number;

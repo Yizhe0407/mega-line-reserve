@@ -1,4 +1,4 @@
-import type { TimeSlot } from "@/types/timeSlot";
+import type { TimeSlot } from "@/types";
 
 interface TimeSlotCardProps {
   slot: TimeSlot;

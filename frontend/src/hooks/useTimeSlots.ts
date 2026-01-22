@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import toast from "react-hot-toast";
 import liff from "@line/liff";
 import { timeSlot as timeSlotApi } from "@/lib/api";
-import type { TimeSlot } from "@/types/timeSlot";
+import type { TimeSlot } from "@/types";
 
 export function useTimeSlots() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);

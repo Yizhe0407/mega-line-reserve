@@ -2,7 +2,7 @@ import liff from "@line/liff";
 import { useStepStore } from "@/store/step-store";
 import { useState, useEffect } from "react";
 import { service as serviceApi } from "@/lib/api";
-import type { Service } from "@/types/service";
+import type { Service } from "@/types";
 
 type LiffMessage = Parameters<typeof liff.sendMessages>[0][number];
 
