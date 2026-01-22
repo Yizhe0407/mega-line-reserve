@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
@@ -44,7 +44,13 @@ export default function Step2ServiceSelect() {
     })
   }
 
-  const otherServiceId = services.find((s: Service) => s.name === '其他')?.id;
+  const otherServiceId = useMemo(() => {
+    return services.find((s: Service) => s.name === '其他')?.id;
+  }, [services]);
+
+  const activeServices = useMemo(() => {
+    return services.filter((service: Service) => service.isActive);
+  }, [services]);
 
   return (
     <>
@@ -64,9 +70,7 @@ export default function Step2ServiceSelect() {
                     <Skeleton className="h-12 w-full" />
                   </>
                 ) : (
-                  services
-                    .filter((service: Service) => service.isActive)
-                    .map((service: Service) => (
+                  activeServices.map((service: Service) => (
                       <Button
                         key={service.id}
                         variant={step2Data?.selectServe?.includes(service.id) ? "default" : "outline"}

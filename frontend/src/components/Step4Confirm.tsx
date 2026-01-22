@@ -13,12 +13,16 @@ export default function Step4Confirm() {
   const step3Data = useStepStore((state) => state.step3Data)
   const services = useStepStore((state) => state.services)
 
+  const serviceMap = useMemo(() => {
+    return new Map(services.map((service) => [service.id, service]));
+  }, [services]);
+
   const selectedServices = useMemo<Service[]>(() => {
     if (services.length === 0) return [];
-    return (step2Data.selectServe || []).map(id => {
-      return services.find(s => s.id === id);
-    }).filter((service): service is Service => Boolean(service));
-  }, [step2Data.selectServe, services]);
+    return (step2Data.selectServe || [])
+      .map((id) => serviceMap.get(id))
+      .filter((service): service is Service => Boolean(service));
+  }, [step2Data.selectServe, serviceMap, services.length]);
 
   return (
     <>
