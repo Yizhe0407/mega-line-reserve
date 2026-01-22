@@ -63,6 +63,24 @@ services:
     networks:
       - mega-network
 
+  # Auto-complete cron (every 5 minutes)
+  auto-complete:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mega-line-reserve-auto-complete
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "while true; do pnpm run cron:complete; sleep 300; done"
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      NODE_ENV: production
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - mega-network
+
   # Frontend (Next.js)
   frontend:
     build:

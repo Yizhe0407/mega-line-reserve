@@ -66,6 +66,26 @@ services:
     networks:
       - mega-network
 
+  # Auto-complete cron (every 5 minutes)
+  auto-complete:
+    image: node:20-alpine
+    container_name: mega-line-reserve-auto-complete-dev
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm prisma generate && while true; do pnpm run cron:complete; sleep 300; done"
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      NODE_ENV: development
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      mysql:
+        condition: service_healthy
+      - backend
+    networks:
+      - mega-network
+
   # Frontend (Next.js) - Development with Hot Reload
   frontend:
     image: node:20-alpine
