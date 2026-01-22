@@ -57,7 +57,7 @@ export default function Step1UserInfo() {
                 id="license"
                 name="license"
                 autoComplete="off"
-                placeholder={isLoading ? "正在獲取中…" : "請輸入車牌號碼"}
+                placeholder={isLoading ? "正在獲取中…" : "例如：ABC-1234 或 1234-AA"}
                 className="h-12"
                 value={step1Data?.license || ""}
                 onChange={(e) =>

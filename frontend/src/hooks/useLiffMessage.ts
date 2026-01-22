@@ -12,18 +12,25 @@ export function useLiffMessage() {
     const services = useStepStore((state) => state.services) as Service[];
 
     // 處理服務項目顯示
+    const serviceById = useMemo(() => {
+        return new Map(services.map((service) => [service.id, service]));
+    }, [services]);
+
+    const otherServiceId = useMemo(() => {
+        return services.find((service) => service.name === '其他')?.id;
+    }, [services]);
+
     const getServiceList = useMemo(() => {
         if (services.length === 0) return "";
-        const otherService = services.find((s) => s.name === '其他');
         const list = (step2Data.selectServe || []).map((id) => {
-            if (id === otherService?.id && step2Data.otherService) {
+            if (id === otherServiceId && step2Data.otherService) {
                 return `其他(${step2Data.otherService})`;
             }
-            const service = services.find((s) => s.id === id);
+            const service = serviceById.get(id);
             return service ? service.name : "";
         });
         return list.join('、');
-    }, [services, step2Data.selectServe, step2Data.otherService]);
+    }, [otherServiceId, serviceById, services.length, step2Data.selectServe, step2Data.otherService]);
 
     const sendLineMessage = async () => {
         try {

@@ -52,6 +52,8 @@ model Service {
   updatedAt DateTime @updatedAt
 
   reserves ServicesOnReserves[]
+
+  @@index([isActive])
 }
 
 model Reserve {
@@ -75,6 +77,11 @@ model Reserve {
 
   @@index([timeSlotId])
   @@index([status])
+  @@index([userId, date])
+  @@index([timeSlotId, date, status])
+  @@index([timeSlotId, status])
+  @@index([userId, status])
+  @@index([date, status])
 }
 
 model TimeSlot {
@@ -91,6 +98,7 @@ model TimeSlot {
 
   @@unique([dayOfWeek, startTime])
   @@index([dayOfWeek])
+  @@index([isActive])
 }
 
 model ServicesOnReserves {
@@ -102,4 +110,5 @@ model ServicesOnReserves {
   assignedAt DateTime @default(now())
 
   @@id([reserveId, serviceId])
+  @@index([serviceId])
 }

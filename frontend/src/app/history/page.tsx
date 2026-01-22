@@ -166,16 +166,7 @@ export default function RecordPage() {
       if (!idToken) throw new Error('無法取得 ID token。');
 
       const data = (await getReserves(idToken)) as ReserveWithServices[];
-      return [...data].sort((a, b) => {
-        if (a.date && b.date) {
-          const dateA = new Date(a.date).getTime();
-          const dateB = new Date(b.date).getTime();
-          if (dateA !== dateB) {
-            return dateA - dateB;
-          }
-        }
-        return 0;
-      });
+      return data;
     },
     {
       revalidateOnFocus: false,

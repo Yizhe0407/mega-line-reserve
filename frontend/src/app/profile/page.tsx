@@ -323,7 +323,7 @@ function ProfilePageContent() {
                     onChange={(e) => setLocalData({ ...localData, license: e.target.value.toUpperCase() })}
                     className={`h-12 ${errors.license ? 'border-destructive' : ''}`}
                     disabled={isSaving}
-                    placeholder="例如：ABC-1234"
+                    placeholder="例如：ABC-1234 或 1234-AA"
                   />
                   {errors.license && <p className="text-sm text-red-500">{errors.license}</p>}
                 </>

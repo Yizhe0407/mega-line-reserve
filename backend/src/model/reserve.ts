@@ -16,9 +16,7 @@ export const getAllReserves = () => {
         },
         orderBy: [
             {
-                timeSlot: {
-                    dayOfWeek: 'asc'
-                }
+                date: 'asc'
             },
             {
                 timeSlot: {
@@ -43,9 +41,7 @@ export const getReservesByUserId = (userId: number) => {
         },
         orderBy: [
             {
-                timeSlot: {
-                    dayOfWeek: 'asc'
-                }
+                date: 'asc'
             },
             {
                 timeSlot: {

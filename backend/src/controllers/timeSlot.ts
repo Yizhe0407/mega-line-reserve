@@ -14,6 +14,7 @@ export const getAllTimeSlots = async (req: AuthRequest, res: Response, next: Nex
 export const getActiveTimeSlots = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const timeSlots = await timeSlotService.getActiveTimeSlots();
+        res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=30");
         res.json(timeSlots);
     } catch (error) {
         next(error);

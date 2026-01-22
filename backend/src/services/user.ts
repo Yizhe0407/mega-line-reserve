@@ -1,6 +1,7 @@
 import * as userModel from "../model/user";
 import { UserProfile, CreateUserDTO } from "../types/user";
 import { ValidationError, NotFoundError } from "../types/errors";
+import { isValidLicense, normalizeLicense } from "../utils/validators";
 
 export const getUserByLineId = async (lineIdParam: string | string[]) => {
     const lineId = Array.isArray(lineIdParam) ? lineIdParam[0] : lineIdParam;
@@ -51,10 +52,11 @@ export const createUser = async (userData: CreateUserDTO) => {
 
     // 業務邏輯檢查：驗證車牌格式（台灣車牌）
     if (userData.license) {
-        const licenseRegex = /^[A-Z]{2,4}-?\d{4}$/;
-        if (!licenseRegex.test(userData.license)) {
-            throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234）");
+        const normalizedLicense = normalizeLicense(userData.license);
+        if (!isValidLicense(normalizedLicense)) {
+            throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");
         }
+        userData.license = normalizedLicense;
     }
 
     // 業務邏輯檢查：確認 Line ID 不重複
@@ -100,10 +102,11 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
 
     // 業務邏輯檢查：驗證車牌格式（如果有更新）
     if (data.license) {
-        const licenseRegex = /^[A-Z]{2,4}-?\d{4}$/;
-        if (!licenseRegex.test(data.license)) {
-            throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234）");
+        const normalizedLicense = normalizeLicense(data.license);
+        if (!isValidLicense(normalizedLicense)) {
+            throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");
         }
+        data.license = normalizedLicense;
     }
 
     // 業務邏輯檢查：如果更新 Line ID，確認不重複

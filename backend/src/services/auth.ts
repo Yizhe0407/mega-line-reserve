@@ -3,6 +3,7 @@ import * as userModel from '../model/user';
 import { UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../types/user';
 import { NewUserError, ValidationError, AuthenticationError } from '../types/errors';
+import { isValidLicense, normalizeLicense } from '../utils/validators';
 
 // LINE ID Token 驗證回應介面
 interface LineIdTokenVerifyResponse {
@@ -88,10 +89,10 @@ export const loginOrRegister = async (
         }
 
         // 驗證車牌格式（如果有提供）
-        if (license && license.trim() !== '') {
-            const licenseRegex = /^[A-Z]{2,4}-?\d{4}$/;
-            if (!licenseRegex.test(license)) {
-                throw new ValidationError('車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234）');
+        const normalizedLicense = normalizeLicense(license);
+        if (normalizedLicense !== '') {
+            if (!isValidLicense(normalizedLicense)) {
+                throw new ValidationError('車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA');
             }
         }
 
@@ -101,7 +102,7 @@ export const loginOrRegister = async (
             name: displayName,
             pictureUrl,
             phone,
-            license: license || '',
+            license: normalizeLicense(license),
             role: UserRole.CUSTOMER,
         };
 

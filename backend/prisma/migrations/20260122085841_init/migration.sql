@@ -46,6 +46,8 @@ CREATE TABLE `Reserve` (
 
     INDEX `Reserve_timeSlotId_idx`(`timeSlotId`),
     INDEX `Reserve_status_idx`(`status`),
+    INDEX `Reserve_userId_date_idx`(`userId`, `date`),
+    INDEX `Reserve_timeSlotId_date_status_idx`(`timeSlotId`, `date`, `status`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

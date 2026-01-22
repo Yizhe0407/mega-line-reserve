@@ -4,7 +4,10 @@ import { AuthRequest } from "../types/express";
 
 export const getAllServices = (req: AuthRequest, res: Response, next: NextFunction) => {
     serviceService.getAllServices()
-        .then((services) => res.json(services))
+        .then((services) => {
+            res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=30");
+            res.json(services);
+        })
         .catch(next);
 };
 

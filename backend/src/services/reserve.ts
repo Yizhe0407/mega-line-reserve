@@ -54,26 +54,28 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
         throw new ValidationError("請選擇預約時段");
     }
 
-    const timeSlot = await timeSlotModel.getTimeSlotById(data.timeSlotId);
-    if (!timeSlot || !timeSlot.isActive) {
-        throw new ValidationError("預約時段不存在或已停用");
-    }
-
     if (!data.date || isNaN(Date.parse(data.date))) {
         throw new ValidationError("無效的預約日期");
-    }
-
-    const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date);
-    const capacity = timeSlot.capacity ?? 1;
-    if (reserveCount >= capacity) {
-        throw new ValidationError("此時段已額滿");
     }
 
     if (!data.license || data.license.trim() === "") {
         throw new ValidationError("請提供車牌號碼");
     }
 
-    const validServiceIds = await validateServiceIds(data.serviceIds);
+    const [timeSlot, validServiceIds, reserveCount] = await Promise.all([
+        timeSlotModel.getTimeSlotById(data.timeSlotId),
+        validateServiceIds(data.serviceIds),
+        reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date),
+    ]);
+
+    if (!timeSlot || !timeSlot.isActive) {
+        throw new ValidationError("預約時段不存在或已停用");
+    }
+
+    const capacity = timeSlot.capacity ?? 1;
+    if (reserveCount >= capacity) {
+        throw new ValidationError("此時段已額滿");
+    }
 
     // 2. 建立預約
     return reserveModel.createReserve(userId, {
@@ -116,6 +118,10 @@ export const updateReserve = async (
         throw new ValidationError("無效的預約日期");
     }
 
+    const validateServiceIdsPromise = updatePayload.serviceIds
+        ? validateServiceIds(updatePayload.serviceIds)
+        : undefined;
+
     // 檢查日期或時段是否變更
     const isTimeChanged = updatePayload.timeSlotId || updatePayload.date;
     
@@ -149,8 +155,8 @@ export const updateReserve = async (
         }
     }
 
-    if (updatePayload.serviceIds) {
-        updatePayload.serviceIds = await validateServiceIds(updatePayload.serviceIds);
+    if (validateServiceIdsPromise) {
+        updatePayload.serviceIds = await validateServiceIdsPromise;
     }
 
     return reserveModel.updateReserve(id, updatePayload);
