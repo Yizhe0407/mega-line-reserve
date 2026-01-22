@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import useSWR from 'swr';
 import liff from '@line/liff';
 import { useStepStore } from '@/store/step-store';
@@ -41,8 +41,26 @@ interface UpdateReservationMessageData {
   isPickup: boolean;
 }
 
-const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) => {
-  const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+const WEEKDAYS = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+const STATUS_CONFIG = {
+  '即將到來': {
+    icon: <Clock className="h-4 w-4 mr-1.5" />,
+    variant: 'default',
+    className: 'bg-blue-500 text-white',
+  },
+  '已完成': {
+    icon: <CheckCircle className="h-4 w-4 mr-1.5" />,
+    variant: 'secondary',
+    className: 'bg-gray-500 text-white',
+  },
+  '已過期': {
+    icon: <AlertCircle className="h-4 w-4 mr-1.5" />,
+    variant: 'secondary',
+    className: 'bg-gray-400 text-white',
+  },
+} as const;
+
+const ReservationCard = memo(({ reserve, onCancel, onEdit }: ReservationCardProps) => {
   const dayOfWeek = reserve.timeSlot?.dayOfWeek ?? 0;
   const startTime = reserve.timeSlot?.startTime ?? '00:00';
   const weekdayName = WEEKDAYS[dayOfWeek];
@@ -68,28 +86,8 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
   // 這裡簡單做：僅當 reserve.date 存在時才嚴格判斷
   const isPast = reserve.date ? now > reserveDate : false;
   
-  // 狀態已完成或已取消也視為不可編輯
-  const isEditable = !isPast && reserve.status !== 'CANCELLED' && reserve.status !== 'COMPLETED';
-
   const status = reserve.status === 'COMPLETED' || reserve.status === 'CANCELLED' ? '已完成' : isPast ? '已過期' : '即將到來';
-  const statusConfig = {
-    '即將到來': {
-      icon: <Clock className="h-4 w-4 mr-1.5" />,
-      variant: 'default',
-      className: 'bg-blue-500 text-white',
-    },
-    '已完成': {
-      icon: <CheckCircle className="h-4 w-4 mr-1.5" />,
-      variant: 'secondary',
-      className: 'bg-gray-500 text-white',
-    },
-    '已過期': {
-       icon: <AlertCircle className="h-4 w-4 mr-1.5" />,
-       variant: 'secondary',
-       className: 'bg-gray-400 text-white',
-    }
-  } as const;
-  const currentStatus = statusConfig[status];
+  const currentStatus = STATUS_CONFIG[status];
 
   return (
     <Card>
@@ -143,7 +141,9 @@ const ReservationCard = ({ reserve, onCancel, onEdit }: ReservationCardProps) =>
       )}
     </Card>
   );
-};
+});
+
+ReservationCard.displayName = "ReservationCard";
 
 export default function RecordPage() {
   const userId = useStepStore((state) => state.userId);
@@ -183,7 +183,7 @@ export default function RecordPage() {
     }
   );
 
-  const handleCancelReservation = async (reserveId: number) => {
+  const handleCancelReservation = useCallback(async (reserveId: number) => {
     if (!confirm('您確定要取消這次的預約嗎？')) return;
 
     try {
@@ -197,14 +197,14 @@ export default function RecordPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : '發生未知錯誤。');
     }
-  };
+  }, [mutate]);
 
-  const handleEditClick = (reserve: ReserveWithServices) => {
-      setEditingReserve(reserve);
-      setIsEditDialogOpen(true);
-  };
+  const handleEditClick = useCallback((reserve: ReserveWithServices) => {
+    setEditingReserve(reserve);
+    setIsEditDialogOpen(true);
+  }, []);
 
-  const handleUpdateReservation = async (
+  const handleUpdateReservation = useCallback(async (
     id: number,
     data: UpdateReserveDTO,
     messageData?: UpdateReservationMessageData
@@ -226,7 +226,7 @@ export default function RecordPage() {
           toast.error(err instanceof Error ? err.message : '更新失敗');
           throw err; 
       }
-  };
+  }, [mutate, sendUpdateLineMessage]);
 
   if (isLoading) {
     return (

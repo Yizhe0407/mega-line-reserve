@@ -1,9 +1,16 @@
 import * as serviceModel from "../model/service";
 import { Service } from "../types/service";
 import { NotFoundError, ValidationError } from "../types/errors";
+import { clearCache, getCache, setCache } from "../utils/cache";
 
-export const getAllServices = () => {
-    return serviceModel.getAllServices();
+const SERVICES_CACHE_KEY = "services:all";
+
+export const getAllServices = async () => {
+    const cached = getCache<Service[]>(SERVICES_CACHE_KEY);
+    if (cached) return cached;
+    const services = await serviceModel.getAllServices();
+    setCache(SERVICES_CACHE_KEY, services);
+    return services;
 };
 
 export const getServiceById = async (idParam: string | string[]) => {
@@ -31,7 +38,9 @@ export const createService = async (serviceData: Service) => {
         throw new ValidationError("價格不能為負數");
     }
     
-    return serviceModel.createService(serviceData);
+    const created = await serviceModel.createService(serviceData);
+    clearCache("services:");
+    return created;
 };
 
 export const updateService = async (idParam: string | string[], data: Partial<Service>) => {
@@ -57,7 +66,9 @@ export const updateService = async (idParam: string | string[], data: Partial<Se
         throw new ValidationError("價格不能為負數");
     }
     
-    return serviceModel.updateService(id, data);
+    const updated = await serviceModel.updateService(id, data);
+    clearCache("services:");
+    return updated;
 };
 
 export const deleteService = async (idParam: string | string[]) => {
@@ -72,5 +83,7 @@ export const deleteService = async (idParam: string | string[]) => {
         throw new NotFoundError("服務不存在");
     }
     
-    return serviceModel.deleteService(id);
+    const deleted = await serviceModel.deleteService(id);
+    clearCache("services:");
+    return deleted;
 };

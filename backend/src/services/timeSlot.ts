@@ -1,6 +1,10 @@
 import * as timeSlotModel from "../model/timeSlot";
-import { CreateTimeSlotDTO, UpdateTimeSlotDTO } from "../types/timeSlot";
+import { CreateTimeSlotDTO, UpdateTimeSlotDTO, TimeSlot } from "../types/timeSlot";
 import { NotFoundError, ValidationError } from "../types/errors";
+import { clearCache, getCache, setCache } from "../utils/cache";
+
+const TIME_SLOTS_ALL_CACHE_KEY = "time-slots:all";
+const TIME_SLOTS_ACTIVE_CACHE_KEY = "time-slots:active";
 
 // 驗證時間格式 HH:mm
 const validateTimeFormat = (time: string): boolean => {
@@ -13,12 +17,20 @@ const validateDayOfWeek = (day: number): boolean => {
     return Number.isInteger(day) && day >= 0 && day <= 6;
 };
 
-export const getAllTimeSlots = () => {
-    return timeSlotModel.getAllTimeSlots();
+export const getAllTimeSlots = async () => {
+    const cached = getCache<TimeSlot[]>(TIME_SLOTS_ALL_CACHE_KEY);
+    if (cached) return cached;
+    const slots = await timeSlotModel.getAllTimeSlots();
+    setCache(TIME_SLOTS_ALL_CACHE_KEY, slots);
+    return slots;
 };
 
-export const getActiveTimeSlots = () => {
-    return timeSlotModel.getActiveTimeSlots();
+export const getActiveTimeSlots = async () => {
+    const cached = getCache<TimeSlot[]>(TIME_SLOTS_ACTIVE_CACHE_KEY);
+    if (cached) return cached;
+    const slots = await timeSlotModel.getActiveTimeSlots();
+    setCache(TIME_SLOTS_ACTIVE_CACHE_KEY, slots);
+    return slots;
 };
 
 export const getTimeSlotById = async (idParam: string | string[]) => {
@@ -61,12 +73,14 @@ export const createTimeSlot = async (data: CreateTimeSlotDTO) => {
         throw new ValidationError(`此時段已存在 (${["週日", "週一", "週二", "週三", "週四", "週五", "週六"][data.dayOfWeek]} ${data.startTime})`);
     }
 
-    return timeSlotModel.createTimeSlot({
+    const created = await timeSlotModel.createTimeSlot({
         dayOfWeek: data.dayOfWeek,
         startTime: data.startTime,
         capacity: data.capacity ?? 1,
         isActive: data.isActive ?? true
     });
+    clearCache("time-slots:");
+    return created;
 };
 
 export const updateTimeSlot = async (idParam: string | string[], data: UpdateTimeSlotDTO) => {
@@ -103,7 +117,9 @@ export const updateTimeSlot = async (idParam: string | string[], data: UpdateTim
         }
     }
 
-    return timeSlotModel.updateTimeSlot(id, data);
+    const updated = await timeSlotModel.updateTimeSlot(id, data);
+    clearCache("time-slots:");
+    return updated;
 };
 
 export const deleteTimeSlot = async (idParam: string | string[]) => {
@@ -117,6 +133,8 @@ export const deleteTimeSlot = async (idParam: string | string[]) => {
         throw new NotFoundError("時段不存在");
     }
 
-    return timeSlotModel.deleteTimeSlot(id);
+    const deleted = await timeSlotModel.deleteTimeSlot(id);
+    clearCache("time-slots:");
+    return deleted;
 };
 
