@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import liff from '@line/liff';
 import toast from 'react-hot-toast';
 import { login } from '@/lib/api/endpoints/auth';
@@ -14,8 +15,14 @@ export function useStepUserData() {
   const setUserId = useStepStore((state) => state.setUserId);
   const setLineId = useStepStore((state) => state.setLineId);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
+  const setIsNewUser = useStepStore((state) => state.setIsNewUser);
 
-  const fetchUserData = async (router?: RouterLike) => {
+  const fetchUserData = useCallback(async (router?: RouterLike) => {
+    // 防止重複執行
+    if (useStepStore.getState().isLoading) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
@@ -32,20 +39,24 @@ export function useStepUserData() {
         return;
       }
 
-      const lineProfile = await liff.getProfile();
-      const lineId = lineProfile.userId;
-      setLineId(lineId);
-
       const idToken = liff.getIDToken();
       if (!idToken) {
         toast.error('無法取得 ID token');
         return;
       }
 
-      const response = await login({}, idToken);
+      // 平行執行：取得 LINE Profile 和 後端登入
+      const [lineProfile, response] = await Promise.all([
+        liff.getProfile(),
+        login({}, idToken)
+      ]);
+
+      const lineId = lineProfile.userId;
+      setLineId(lineId);
       setUserId(response.user.id);
 
       if (!response.user.phone || !response.user.license) {
+        setIsNewUser(true);
         setStep1Data({
           pictureUrl: lineProfile.pictureUrl,
           name: response.user.name || '',
@@ -57,6 +68,8 @@ export function useStepUserData() {
         }
         return;
       }
+
+      setIsNewUser(false);
 
       setStep1Data({
         pictureUrl: lineProfile.pictureUrl,
@@ -70,6 +83,7 @@ export function useStepUserData() {
 
       // 處理新用戶錯誤
       if (error instanceof FetchError && isRecord(error.data) && error.data.isNewUser) {
+        setIsNewUser(true);
         const lineProfile = isRecord(error.data.lineProfile) ? error.data.lineProfile : undefined;
         setStep1Data({
           pictureUrl: typeof lineProfile?.pictureUrl === 'string' ? lineProfile.pictureUrl : '',
@@ -88,7 +102,7 @@ export function useStepUserData() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setIsLoading, setUserId, setLineId, setStep1Data, setIsNewUser]);
 
   return { fetchUserData };
 }

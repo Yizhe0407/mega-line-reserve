@@ -10,6 +10,7 @@ import { getActiveTimeSlots } from '@/lib/api/endpoints/timeSlot';
 import { useStepStore } from '@/store/step-store';
 import type { Reserve, TimeSlot, Service, UpdateReserveDTO } from '@/types';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -42,6 +43,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
   const [timeSlotId, setTimeSlotId] = useState<number | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [isPickup, setIsPickup] = useState(false);
+  const [license, setLicense] = useState("");
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +59,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
 
       setTimeSlotId(reserve.timeSlotId);
       setIsPickup(reserve.isPickup || false);
+      setLicense(reserve.license || "");
 
       const serviceIds = (reserve as ReserveWithServices).services?.map((s) => s.service.id) || [];
       setSelectedServices(serviceIds);
@@ -113,6 +116,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
         timeSlotId,
         serviceIds: selectedServices,
         isPickup,
+        license: license.trim().toUpperCase(),
       };
       
       const selectedSlot = timeSlots.find(s => s.id === timeSlotId);
@@ -123,7 +127,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
         const messageData: UpdateReservationMessageData = {
           date: format(date, 'yyyy-MM-dd'),
           time: selectedSlot?.startTime || '',
-          license: reserve.license,
+          license: license.trim().toUpperCase(),
           serviceNames: selectedServiceNames,
           isPickup
       };
@@ -145,6 +149,16 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
       description="請選擇新的日期、時間或服務項目。"
     >
       <div className="space-y-5 py-2">
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold text-neutral-700">車牌號碼</Label>
+          <Input
+            value={license}
+            onChange={(e) => setLicense(e.target.value.toUpperCase())}
+            placeholder="例如：ABC-1234"
+            className="rounded-xl border-neutral-200"
+          />
+        </div>
+
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-neutral-700">服務項目</Label>
           <div className="flex flex-wrap gap-2">

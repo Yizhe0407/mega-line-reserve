@@ -48,8 +48,15 @@ const Step4Confirm = dynamic(() => import("@/components/Step4Confirm"), {
   ),
 });
 
+import { useStepServices } from "@/hooks/useStepServices";
+import { useActiveTimeSlots } from "@/hooks/useActiveTimeSlots";
+
 export default function StepperClient() {
   const currentStep = useStepStore((step) => step.currentStep);
+  
+  // 預先載入資料 (Prefetching)
+  useStepServices();
+  useActiveTimeSlots();
   
   const renderStep = () => {
     switch (currentStep) {

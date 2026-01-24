@@ -41,6 +41,10 @@ export default function Step4Confirm() {
                     <span className="text-sm font-bold">{step1Data.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">手機號碼</span>
+                    <span className="text-sm font-bold">{step1Data.phone}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">車牌號碼</span>
                     <span className="text-sm font-bold">{step1Data.license}</span>
                   </div>

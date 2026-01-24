@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,12 @@ export default function Step1UserInfo() {
   const isLoading = useStepStore((state) => state.isLoading);
   const { fetchUserData } = useStepUserData();
 
+  useEffect(() => {
+    if (!step1Data?.name && !step1Data?.license) {
+      fetchUserData(null);
+    }
+  }, [fetchUserData, step1Data?.name, step1Data?.license]);
+
   return (
     <>
       <div className="px-4 pt-20">
@@ -25,6 +32,7 @@ export default function Step1UserInfo() {
             <Button 
               onClick={() => fetchUserData(null)} 
               className="w-full bg-black text-white hover:bg-gray-800 rounded-xl h-12"
+              disabled={isLoading}
             >
               自動填入
             </Button>
@@ -54,6 +62,23 @@ export default function Step1UserInfo() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="phone" className="text-md font-bold">
+                手機號碼 <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder={isLoading ? "正在獲獲中…" : "請輸入您的手機號碼"}
+                className="h-12 border-none"
+                style={{ backgroundColor: '#f8f8f8' }}
+                value={step1Data?.phone || ""}
+                onChange={(e) => setStep1Data({ phone: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="license" className="text-md font-bold">
                 車牌號碼 <span className="text-destructive">*</span>
               </Label>
@@ -75,7 +100,7 @@ export default function Step1UserInfo() {
       </div>
 
       <StepButtonGroup
-        isNextDisabled={!step1Data?.name || !step1Data?.license}
+        isNextDisabled={!step1Data?.name || !step1Data?.phone || !step1Data?.license}
       />
     </>
   );

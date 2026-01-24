@@ -29,7 +29,7 @@ model User {
   id         Int      @id @default(autoincrement())
   lineId     String   @unique
   name       String?
-  pictureUrl String?
+  pictureUrl String?  @db.Text
   phone      String   @unique
   license    String?
   role       UserRole @default(CUSTOMER)

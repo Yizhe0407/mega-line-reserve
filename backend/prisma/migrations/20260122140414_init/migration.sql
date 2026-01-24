@@ -3,7 +3,7 @@ CREATE TABLE `User` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `lineId` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NULL,
-    `pictureUrl` VARCHAR(191) NULL,
+    `pictureUrl` TEXT NULL,
     `phone` VARCHAR(191) NOT NULL,
     `license` VARCHAR(191) NULL,
     `role` ENUM('ADMIN', 'CUSTOMER') NOT NULL DEFAULT 'CUSTOMER',
@@ -27,6 +27,7 @@ CREATE TABLE `Service` (
     `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `Service_name_key`(`name`),
+    INDEX `Service_isActive_idx`(`isActive`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -48,6 +49,9 @@ CREATE TABLE `Reserve` (
     INDEX `Reserve_status_idx`(`status`),
     INDEX `Reserve_userId_date_idx`(`userId`, `date`),
     INDEX `Reserve_timeSlotId_date_status_idx`(`timeSlotId`, `date`, `status`),
+    INDEX `Reserve_timeSlotId_status_idx`(`timeSlotId`, `status`),
+    INDEX `Reserve_userId_status_idx`(`userId`, `status`),
+    INDEX `Reserve_date_status_idx`(`date`, `status`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -62,6 +66,7 @@ CREATE TABLE `TimeSlot` (
     `updatedAt` DATETIME(3) NOT NULL,
 
     INDEX `TimeSlot_dayOfWeek_idx`(`dayOfWeek`),
+    INDEX `TimeSlot_isActive_idx`(`isActive`),
     UNIQUE INDEX `TimeSlot_dayOfWeek_startTime_key`(`dayOfWeek`, `startTime`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -72,6 +77,7 @@ CREATE TABLE `ServicesOnReserves` (
     `serviceId` INTEGER NOT NULL,
     `assignedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `ServicesOnReserves_serviceId_idx`(`serviceId`),
     PRIMARY KEY (`reserveId`, `serviceId`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

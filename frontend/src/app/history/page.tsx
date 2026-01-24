@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { cn } from '@/lib/utils';
-import { PlusCircle, AlertCircle, Trash2, ChevronRight, Car, Pencil, Loader2 } from 'lucide-react';
+import { PlusCircle, AlertCircle, Trash2, ChevronRight, Car, Pencil, Loader2, User, Phone } from 'lucide-react';
 import Link from 'next/link';
 import type { Reserve, Service, UpdateReserveDTO } from '@/types';
 import EditReservationDialog from '@/components/EditReservationDialog';
@@ -24,6 +24,10 @@ interface ReserveServiceItem {
 
 interface ReserveWithServices extends Reserve {
   services: ReserveServiceItem[];
+  user?: {
+    name: string;
+    phone: string;
+  };
 }
 
 interface ReservationCardProps {
@@ -117,6 +121,7 @@ ReservationCard.displayName = "ReservationCard";
 
 export default function RecordPage() {
   const userId = useStepStore((state) => state.userId);
+  const step1Data = useStepStore((state) => state.step1Data);
   const { sendUpdateLineMessage, sendCancelLineMessage } = useLiffMessage();
   useStepServices();
 
@@ -383,12 +388,35 @@ export default function RecordPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm text-neutral-600">
-              <span className="flex items-center gap-2">
-                <Car className="h-4 w-4" />
-                到府牽車
-              </span>
-              <span className="font-semibold text-neutral-900">{detailReserve.isPickup ? '是' : '否'}</span>
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between text-sm text-neutral-600">
+                <span className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-neutral-400" />
+                  姓名
+                </span>
+                <span className="font-semibold text-neutral-900">{detailReserve.user?.name || step1Data.name}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-neutral-600">
+                <span className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-neutral-400" />
+                  手機號碼
+                </span>
+                <span className="font-semibold text-neutral-900">{detailReserve.user?.phone || step1Data.phone}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-neutral-600">
+                <span className="flex items-center gap-2">
+                  <Car className="h-4 w-4 text-neutral-400" />
+                  車牌號碼
+                </span>
+                <span className="font-semibold text-neutral-900">{detailReserve.license}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-neutral-600">
+                <span className="flex items-center gap-2">
+                  <Car className="h-4 w-4 text-neutral-400" />
+                  到府牽車
+                </span>
+                <span className="font-semibold text-neutral-900">{detailReserve.isPickup ? '是' : '否'}</span>
+              </div>
             </div>
 
             {detailStatus.statusKey === 'upcoming' && detailReserve.status === 'PENDING' && (

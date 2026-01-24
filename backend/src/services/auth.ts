@@ -4,6 +4,7 @@ import { UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../types/user';
 import { NewUserError, ValidationError, AuthenticationError } from '../types/errors';
 import { isValidLicense, normalizeLicense } from '../utils/validators';
+import { getCache, setCache } from '../utils/cache';
 
 // LINE ID Token 驗證回應介面
 interface LineIdTokenVerifyResponse {
@@ -26,6 +27,13 @@ export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerif
         throw new AuthenticationError('ID token 不能為空');
     }
 
+    // 嘗試從快取取得驗證結果
+    const cacheKey = `line-token:${idToken}`;
+    const cached = getCache<LineIdTokenVerifyResponse>(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
     const lineChannelId = process.env.LINE_CHANNEL_ID;
     if (!lineChannelId || lineChannelId.trim() === '') {
         throw new AuthenticationError('LINE_CHANNEL_ID 未設定，無法驗證 ID token');
@@ -41,6 +49,9 @@ export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerif
         if (response.data.aud && response.data.aud !== lineChannelId) {
             throw new AuthenticationError('無效的 token - Channel ID 不符');
         }
+
+        // 寫入快取，保留 5 分鐘
+        setCache(cacheKey, response.data, 5 * 60 * 1000);
 
         return response.data;
     } catch (error) {
@@ -98,7 +109,22 @@ export const loginOrRegister = async (
             role: UserRole.CUSTOMER,
         };
 
-        user = await userModel.createUser(userData);
+        try {
+            user = await userModel.createUser(userData);
+        } catch (error: any) {
+            // P2002: Unique constraint failed
+            if (error.code === 'P2002' && error.meta?.target?.includes('lineId')) {
+                // 如果是因為 lineId 重複導致建立失敗，表示剛剛已經被其他請求建立了
+                // 這時候重新查詢一次即可
+                user = await userModel.findUserByLineId(lineId);
+                if (!user) {
+                    // 如果還是找不到，那就真的是未知的錯誤了
+                    throw error;
+                }
+            } else {
+                throw error;
+            }
+        }
     }
 
     return user;

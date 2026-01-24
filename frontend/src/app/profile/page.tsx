@@ -48,6 +48,7 @@ function ProfilePageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { userId, lineId } = useStepStore();
   const setUserId = useStepStore((state) => state.setUserId);
+  const setIsNewUser = useStepStore((state) => state.setIsNewUser);
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
   const [localData, setLocalData] = useState<ProfileFormData>(step1Data);
@@ -65,9 +66,12 @@ function ProfilePageContent() {
   useEffect(() => {
     if (isNewUser) {
       setIsEditing(true);
-      setLocalData({ pictureUrl: step1Data.pictureUrl });
+      setLocalData({ 
+        ...step1Data, 
+        pictureUrl: step1Data.pictureUrl 
+      });
     }
-  }, [isNewUser, step1Data.pictureUrl]);
+  }, [isNewUser, step1Data]);
 
   const validate = () => {
     const newErrors: ProfileErrors = {};
@@ -151,6 +155,7 @@ function ProfilePageContent() {
         license: updatedProfile.license,
         pictureUrl: updatedProfile.pictureUrl,
       });
+      setIsNewUser(false);
       setIsEditing(false);
       setErrors({});
       router.push("/profile");

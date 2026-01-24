@@ -1,6 +1,7 @@
 "use client";
 import liff from "@line/liff";
 import toast from "react-hot-toast";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
@@ -37,6 +38,7 @@ export default function StepButtonGroup({
   const TOTAL_STEP = 4;
   const router = useRouter();
   const { mutate } = useSWRConfig();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // 第一頁時「上一步」禁用，否則啟用
   const isPreviousDisabled = currentStep === FIRST_STEP;
 
@@ -65,22 +67,28 @@ export default function StepButtonGroup({
       console.error("Error during send:", error);
     }
   };
-  const { sendLineMessage } = useLiffMessage(); //不能放在handleNextClick內，React Hook只能在組件的最外層呼叫
+  const { sendLineMessage } = useLiffMessage();
   const handleNextClick = async () => {
     if (currentStep === TOTAL_STEP) {
-      await toast.promise(
-        (async () => {
-          await send();
-          await sendLineMessage();
-          reset();
-        })(),
-        {
-          loading: "處理中…",
-          success: "預約完成！",
-          error: "預約失敗，請稍後再試",
-        }
-      );
-      router.push("/final");
+      setIsSubmitting(true);
+      try {
+        await toast.promise(
+          (async () => {
+            await send();
+            await sendLineMessage();
+            // 成功後先不 reset()，避免 currentStep 變回 1 導致按鈕文字閃爍
+          })(),
+          {
+            loading: "處理中…",
+            success: "預約完成！",
+            error: "預約失敗，請稍後再試",
+          }
+        );
+        router.push("/final");
+        setTimeout(() => reset(), 500); 
+      } catch (error) {
+        setIsSubmitting(false);
+      }
     } else {
       nextStep();
     }
@@ -99,11 +107,17 @@ export default function StepButtonGroup({
         </Button>
         <Button
           onClick={handleNextClick}
-          disabled={isNextDisabled || isLoading}
+          disabled={isNextDisabled || isLoading || isSubmitting}
           className="flex-1 h-12 "
         >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? "處理中…" : nextButtonText}
+          {isLoading || isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              處理中…
+            </>
+          ) : (
+            nextButtonText
+          )}
         </Button>
       </div>
     </div>

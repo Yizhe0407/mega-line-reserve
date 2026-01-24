@@ -9,6 +9,7 @@ interface StepStore {
   userId: number | null;
   lineId: string;
   isLoading: boolean;
+  isNewUser: boolean;
   services: Service[];
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -20,6 +21,7 @@ interface StepStore {
   setUserId: (userId: number | null) => void;
   setLineId: (lineId: string) => void;
   setIsLoading: (loading: boolean) => void;
+  setIsNewUser: (isNew: boolean) => void;
   reset: () => void;
 }
 
@@ -31,6 +33,7 @@ export const useStepStore = create<StepStore>((set, get) => ({
   userId: null,
   lineId: '',
   isLoading: false,
+  isNewUser: false,
   services: [],
 
 
@@ -62,6 +65,8 @@ export const useStepStore = create<StepStore>((set, get) => ({
   setLineId: (lineId) => set({ lineId }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
+
+  setIsNewUser: (isNew) => set({ isNewUser: isNew }),
 
   reset: () =>
     set({
