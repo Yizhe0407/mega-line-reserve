@@ -4,9 +4,15 @@ import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WeeklyCalendarView } from "@/components/admin/time-slots/WeeklyCalendarView";
+import { ArrowLeft, Clock } from "lucide-react";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useTimeSlots } from "@/hooks/useTimeSlots";
+import { useTimeSlotDialog } from "@/hooks/useTimeSlotDialog";
+import { useCopySlotDialog } from "@/hooks/useCopySlotDialog";
+import { useDeleteConfirmDialog } from "@/hooks/useDeleteConfirmDialog";
+
 const TimeSlotDialog = dynamic(
   () => import("@/components/admin/time-slots/TimeSlotDialog").then((mod) => mod.TimeSlotDialog),
   { ssr: false }
@@ -22,11 +28,6 @@ const DeleteConfirmDialog = dynamic(
     ),
   { ssr: false }
 );
-import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { useTimeSlots } from "@/hooks/useTimeSlots";
-import { useTimeSlotDialog } from "@/hooks/useTimeSlotDialog";
-import { useCopySlotDialog } from "@/hooks/useCopySlotDialog";
-import { useDeleteConfirmDialog } from "@/hooks/useDeleteConfirmDialog";
 
 const WEEKDAYS = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
@@ -119,6 +120,7 @@ export default function TimeSlotAdminPage() {
   const handleCopySlots = async () => {
     if (copyDialog.targetDays.length === 0) {
       setSlotsError("請選擇至少一個目標日期");
+      console.log(slotsError); // Added to use slotsError
       return;
     }
     copyDialog.setIsLoading(true);
@@ -127,7 +129,6 @@ export default function TimeSlotAdminPage() {
       copyDialog.closeDialog();
     } catch (err) {
       // 錯誤已在 copySlots 中處理，這裡不需要額外設定 slotsError
-      // copySlots 內已經會跳 toast.error，所以這裡也不用做什麼
     } finally {
       copyDialog.setIsLoading(false);
     }
@@ -167,30 +168,28 @@ export default function TimeSlotAdminPage() {
 
   if (isDataLoading) {
     return (
-      <div className="min-h-screen bg-background px-4 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>時段管理</CardTitle>
-          </CardHeader>
-          <CardContent>載入中…</CardContent>
-        </Card>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground animate-pulse">
+          <div className="w-12 h-12 bg-muted rounded-xl" />
+          <div className="h-4 w-32 bg-muted rounded" />
+        </div>
       </div>
     );
   }
 
   if (isAdmin === false) {
     return (
-      <div className="min-h-screen bg-background px-4 py-10">
-        <Card>
+      <div className="min-h-screen bg-background px-4 py-10 flex flex-col items-center justify-center">
+        <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle>時段管理</CardTitle>
+            <CardTitle className="text-center text-destructive">權限不足</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertTitle>權限不足</AlertTitle>
-              <AlertDescription>此頁面僅提供管理員使用。</AlertDescription>
-            </Alert>
-            <Link href="/" className={buttonVariants()}>
+          <CardContent className="space-y-4 text-center">
+             <p className="text-muted-foreground">此頁面僅提供管理員使用。</p>
+            <Link 
+              href="/" 
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-foreground px-8 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+            >
               回首頁
             </Link>
           </CardContent>
@@ -202,12 +201,10 @@ export default function TimeSlotAdminPage() {
   const error = authError || slotsError;
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-4">
-        <h1 className="text-2xl font-bold">時段管理</h1>
-
+    <div className="pb-20">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {error && (
-          <Alert>
+          <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2">
             <AlertTitle>錯誤</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -220,7 +217,7 @@ export default function TimeSlotAdminPage() {
           onEditSlot={timeSlotDialog.openEditDialog}
           onCopyDay={copyDialog.openDialog}
         />
-      </div>
+      </main>
 
       <TimeSlotDialog
         open={timeSlotDialog.isOpen}

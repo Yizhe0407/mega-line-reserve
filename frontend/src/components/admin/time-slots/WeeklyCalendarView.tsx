@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Copy, ChevronDown, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TimeSlot } from "@/types";
+import { Button } from "@/components/ui/button";
 
 interface WeeklyCalendarViewProps {
   weekdays: string[];
@@ -40,10 +41,11 @@ export function WeeklyCalendarView({
               className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm"
             >
               {/* Day Header */}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => toggleDay(index)}
-                className="w-full flex items-center justify-between px-5 py-4 active:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between px-5 py-4 h-auto active:bg-muted/50 transition-colors hover:bg-muted/30"
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -66,17 +68,19 @@ export function WeeklyCalendarView({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       onCopyDay(index);
                     }}
-                    className="p-2.5 hover:bg-muted rounded-xl transition-colors"
+                    className="p-2.5 h-auto w-auto hover:bg-muted rounded-xl transition-colors"
                     aria-label="複製時段"
                   >
                     <Copy className="w-4 h-4 text-muted-foreground" />
-                  </button>
+                  </Button>
                   <ChevronDown
                     className={cn(
                       "w-5 h-5 text-muted-foreground transition-transform duration-200",
@@ -84,7 +88,7 @@ export function WeeklyCalendarView({
                     )}
                   />
                 </div>
-              </button>
+              </Button>
 
               {/* Expanded Content */}
               {expandedDay === index && (
@@ -92,12 +96,13 @@ export function WeeklyCalendarView({
                   {slots.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 pt-3">
                       {slots.map((slot) => (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
                           key={slot.id}
                           onClick={() => onEditSlot(slot)}
                           className={cn(
-                            "flex items-center justify-between px-4 py-3.5 rounded-xl transition-all active:scale-[0.98]",
+                            "flex items-center justify-between px-4 py-3.5 h-auto w-full rounded-xl transition-all active:scale-[0.98]",
                             slot.isActive
                               ? "bg-muted hover:bg-muted/80"
                               : "bg-muted/50 text-muted-foreground line-through"
@@ -109,7 +114,7 @@ export function WeeklyCalendarView({
                           <span className="text-xs text-muted-foreground">
                             {slot.capacity}人
                           </span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   ) : (
@@ -119,14 +124,15 @@ export function WeeklyCalendarView({
                   )}
 
                   {/* Add Button */}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => onAddSlot(index)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 mt-2 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-foreground hover:text-foreground transition-all active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 h-auto mt-2 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-foreground hover:text-foreground transition-all active:scale-[0.98] hover:bg-transparent"
                   >
                     <Plus className="w-4 h-4" />
                     <span className="text-sm font-medium">新增時段</span>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -157,32 +163,35 @@ export function WeeklyCalendarView({
                     </span>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => onCopyDay(index)}
-                  className="p-2 hover:bg-muted rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  className="p-2 h-auto w-auto hover:bg-muted rounded-lg transition-all opacity-0 group-hover:opacity-100"
                   aria-label="複製時段"
                 >
                   <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
+                </Button>
               </div>
 
               {/* Time Slots Container */}
               <div className="flex-1 bg-card rounded-2xl border border-border p-3 min-h-[420px] flex flex-col shadow-sm">
                 <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[500px] scrollbar-thin pr-1">
                   {slots.map((slot) => (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       key={slot.id}
                       onClick={() => onEditSlot(slot)}
                       className={cn(
-                        "w-full text-left px-3 py-3 rounded-xl transition-all group/slot",
+                        "w-full text-left px-3 py-3 h-auto rounded-xl transition-all group/slot justify-between",
                         slot.isActive
                           ? "bg-muted hover:bg-muted/70 hover:shadow-sm"
                           : "bg-muted/40 text-muted-foreground"
                       )}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between w-full">
                         <span className="font-semibold tabular-nums text-sm">
                           {slot.startTime}
                         </span>
@@ -197,7 +206,7 @@ export function WeeklyCalendarView({
                           {slot.capacity}人
                         </span>
                       </div>
-                    </button>
+                    </Button>
                   ))}
 
                   {slots.length === 0 && (
@@ -211,14 +220,15 @@ export function WeeklyCalendarView({
                 </div>
 
                 {/* Add Button */}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onAddSlot(index)}
-                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all border-2 border-dashed border-border hover:border-foreground/30"
+                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-3 h-auto text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all border-2 border-dashed border-border hover:border-foreground/30"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="font-medium">新增</span>
-                </button>
+                </Button>
               </div>
             </div>
           );

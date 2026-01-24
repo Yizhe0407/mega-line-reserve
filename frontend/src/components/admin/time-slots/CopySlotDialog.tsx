@@ -1,6 +1,7 @@
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface CopySlotDialogProps {
   open: boolean;
@@ -40,19 +41,20 @@ export function CopySlotDialog({
           {weekdays.map((day, index) => {
             if (index === sourceDay) return null;
             return (
-              <button
+              <Button
                 key={index}
                 type="button"
+                variant="ghost"
                 onClick={() => onToggleTargetDay(index)}
                 className={cn(
-                  "py-2.5 rounded-xl font-medium transition-all text-sm",
+                  "py-2.5 rounded-xl font-medium transition-all text-sm h-auto",
                   targetDays.includes(index)
                     ? "bg-foreground text-background"
                     : "bg-secondary/50 hover:bg-secondary"
                 )}
               >
                 {day}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -65,7 +67,7 @@ export function CopySlotDialog({
         </div>
 
         <div className="flex gap-2.5">
-          <button
+          <Button
             type="button"
             onClick={onConfirm}
             disabled={isLoading || targetDays.length === 0}
@@ -73,14 +75,14 @@ export function CopySlotDialog({
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             確認複製
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="px-6 h-10 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center text-sm"
+            className="px-6 h-10 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center text-sm text-secondary-foreground"
           >
             取消
-          </button>
+          </Button>
         </div>
       </div>
     </ResponsiveDialog>

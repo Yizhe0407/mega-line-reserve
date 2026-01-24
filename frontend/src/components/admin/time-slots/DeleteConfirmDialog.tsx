@@ -1,6 +1,7 @@
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { TimeSlot } from "@/types";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -33,7 +34,7 @@ export function DeleteConfirmDialog({
           </div>
         )}
         <div className="flex gap-2.5">
-          <button
+          <Button
             type="button"
             onClick={onConfirm}
             className="flex-1 h-10 bg-destructive text-destructive-foreground rounded-xl font-semibold hover:bg-destructive/90 transition-all flex items-center justify-center disabled:opacity-50 text-sm"
@@ -41,15 +42,15 @@ export function DeleteConfirmDialog({
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             確認刪除
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="flex-1 h-10 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 flex items-center justify-center text-sm"
+            className="flex-1 h-10 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 flex items-center justify-center text-sm text-secondary-foreground"
             disabled={isLoading}
           >
             取消
-          </button>
+          </Button>
         </div>
       </div>
     </ResponsiveDialog>

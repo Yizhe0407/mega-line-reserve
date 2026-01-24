@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import type { TimeSlot } from "@/types";
 import { cn } from "@/lib/utils";
@@ -58,19 +59,20 @@ export function TimeSlotDialog({
           </label>
           <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1 scrollbar-thin">
             {timeOptions.map((time) => (
-              <button
+              <Button
                 key={time}
                 type="button"
+                variant="ghost"
                 onClick={() => onTimeToggle(time)}
                 className={cn(
-                  "py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.96]",
+                  "py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.96] h-auto",
                   selectedTimes.includes(time)
-                    ? "bg-foreground text-background shadow-sm"
+                    ? "bg-foreground text-background shadow-sm hover:bg-foreground/90"
                     : "bg-muted text-foreground hover:bg-muted/70"
                 )}
               >
                 {time}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -95,7 +97,7 @@ export function TimeSlotDialog({
         </div>
 
         <div className="flex gap-2.5">
-          <button
+          <Button
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting || isToggling || (!editingSlot && selectedTimes.length === 0)}
@@ -103,19 +105,19 @@ export function TimeSlotDialog({
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editingSlot ? "儲存" : "新增"}
-          </button>
+          </Button>
           
           {editingSlot && (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={onToggleActive}
                 disabled={isSubmitting || isToggling}
-                className="h-10 px-5 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center text-sm"
+                className="h-10 px-5 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center text-sm text-secondary-foreground"
               >
                 {isToggling ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingSlot.isActive ? "停用" : "啟用")}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={onDelete}
                 disabled={isSubmitting || isToggling}
@@ -123,7 +125,7 @@ export function TimeSlotDialog({
                 aria-label="刪除"
               >
                 <Trash2 className="w-5 h-5" />
-              </button>
+              </Button>
             </>
           )}
         </div>
