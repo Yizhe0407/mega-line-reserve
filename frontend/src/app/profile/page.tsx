@@ -5,7 +5,6 @@ import { useStepStore } from "@/store/step-store";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -174,7 +173,7 @@ function ProfilePageContent() {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-background pb-24">
+    <div className="max-w-md mx-auto min-h-screen bg-background pb-32 relative">
       <div className="px-4 py-6">
         <div className="flex flex-col items-center mb-6">
           {isLoading ? (
@@ -193,7 +192,7 @@ function ProfilePageContent() {
           )}
         </div>
 
-        {showNavigationTip && !isLoading && (
+        {showNavigationTip && !isLoading && !isEditing && (
           <Alert className="mb-6 items-center border-blue-200 bg-blue-50/80 shadow-sm">
             <AlertTitle className="flex flex-col sm:flex-row sm:items-center text-blue-800 font-medium gap-3 sm:justify-between">
               <div className="flex gap-3 items-center">
@@ -236,32 +235,11 @@ function ProfilePageContent() {
         <Card className="mb-6 shadow-none border-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">基本資料</CardTitle>
-            {!isEditing ? (
+            {!isEditing && (
               <Button variant="ghost" size="sm" onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-1" />
                 編輯
               </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  aria-label="取消編輯"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  aria-label="儲存變更"
-                >
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                </Button>
-              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -342,15 +320,41 @@ function ProfilePageContent() {
               )}
             </div>
           </CardContent>
-          {isEditing && (
-            <CardFooter>
-              <p className="text-xs text-muted-foreground text-center w-full">
-                填寫完畢後，請點擊右上角的儲存按鈕。
-              </p>
-            </CardFooter>
-          )}
         </Card>
       </div>
+
+      {/* Sticky Bottom Actions */}
+      {isEditing && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border z-10 safe-area-bottom">
+          <div className="max-w-md mx-auto flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="flex-1 h-12 rounded-xl"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 h-12 rounded-xl"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  儲存中...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  儲存變更
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

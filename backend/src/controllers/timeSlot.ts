@@ -21,6 +21,18 @@ export const getActiveTimeSlots = async (req: AuthRequest, res: Response, next: 
     }
 };
 
+export const getAvailableTimeSlots = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const dateStr = req.query.date as string;
+        const timeSlots = await timeSlotService.getAvailableTimeSlots(dateStr);
+        // 不快取，因為這是特定日期且變動快
+        res.set("Cache-Control", "no-store");
+        res.json(timeSlots);
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const getTimeSlotById = (req: AuthRequest, res: Response, next: NextFunction) => {
     timeSlotService.getTimeSlotById(req.params.id)
         .then((timeSlot) => res.json(timeSlot))

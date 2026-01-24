@@ -23,10 +23,17 @@ export const getAllTimeSlots = (token: string): Promise<TimeSlot[]> => {
 };
 
 /**
- * 取得可用時段 (公開)
+ * 取得可用時段 (公開) - 僅返回設定檔，不含特定日期預約狀況
  */
 export const getActiveTimeSlots = (): Promise<TimeSlot[]> => {
   return get<TimeSlot[]>('/api/time-slot/active');
+};
+
+/**
+ * 取得特定日期的時段可用性
+ */
+export const getAvailableTimeSlots = (date: string): Promise<TimeSlot[]> => {
+  return get<TimeSlot[]>(`/api/time-slot/available?date=${date}`);
 };
 
 /**

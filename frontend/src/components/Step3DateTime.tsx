@@ -9,23 +9,21 @@ import { useStepStore } from "@/store/step-store";
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useActiveTimeSlots } from "@/hooks/useActiveTimeSlots";
+import { useAvailableTimeSlots } from "@/hooks/useAvailableTimeSlots";
+import { Loader2 } from "lucide-react";
 
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data);
   const setStep3Data = useStepStore((state) => state.setStep3Data);
-  const { timeSlots } = useActiveTimeSlots();
+  
+  // 使用新的 Hook 根據選擇的日期取得可用時段與預約狀況
+  const { timeSlots, isLoading } = useAvailableTimeSlots(step3Data.date || null);
 
   const filteredSlots = useMemo(() => {
-    if (!step3Data.date) return [];
+    if (!step3Data.date || !timeSlots) return [];
 
-    // 計算選擇日期是星期幾 (0=週日, 1=週一, ..., 6=週六)
-    const selectedDate = new Date(step3Data.date);
-    const dayOfWeek = selectedDate.getDay();
-
-    // 篩選該星期的時段
+    // 時段已經由後端根據日期過濾，這裡只需要排序與格式化
     return timeSlots
-      .filter((slot) => slot.dayOfWeek === dayOfWeek)
       .map((slot) => ({
         ...slot,
         date: step3Data.date,
@@ -68,9 +66,15 @@ export default function Step3DateTime() {
               <div className="text-center py-8 text-[#a3a3a3]">
                 <p className="text-sm">請先選擇預約日期</p>
               </div>
+            ) : isLoading ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <p className="text-sm">正在查詢可預約時段...</p>
+              </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {filteredSlots.map((slot) => {
+                  // _count.reserves 現在只會包含該日期的非取消預約
                   const reserveCount = slot._count?.reserves ?? 0;
                   const isFull = reserveCount >= slot.capacity;
 
@@ -91,10 +95,16 @@ export default function Step3DateTime() {
                           timeSlotId: slot.id,
                         })
                       }
-                      className="h-12 text-sm"
+                      className="h-12 text-sm relative"
                     >
                       {slot.timeLabel}
-                      {isFull && <span className="ml-1 text-xs">(額滿)</span>}
+                      {isFull && <span className="ml-1 text-xs text-red-500 font-medium">(額滿)</span>}
+                      {/* Optional: Show remaining spots? */}
+                      {!isFull && slot.capacity > 1 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white shadow-sm ring-1 ring-white">
+                          {slot.capacity - reserveCount}
+                        </span>
+                      )}
                     </Button>
                   );
                 })}

@@ -33,6 +33,20 @@ export const getActiveTimeSlots = async () => {
     return slots;
 };
 
+export const getAvailableTimeSlots = async (dateStr: string) => {
+    if (!dateStr || isNaN(Date.parse(dateStr))) {
+        throw new ValidationError("無效的日期格式 (YYYY-MM-DD)");
+    }
+
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay(); // 0-6
+
+    // 直接查詢該日期與星期幾的時段與預約狀況
+    // 這裡不使用快取，因為預約狀況會隨時變動
+    const slots = await timeSlotModel.getTimeSlotsWithReserveCount(dayOfWeek, date);
+    return slots;
+};
+
 export const getTimeSlotById = async (idParam: string | string[]) => {
     const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
     if (isNaN(id)) {
@@ -137,4 +151,3 @@ export const deleteTimeSlot = async (idParam: string | string[]) => {
     clearCache("time-slots:");
     return deleted;
 };
-

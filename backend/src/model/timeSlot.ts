@@ -15,23 +15,33 @@ export const getActiveTimeSlots = () => {
         where: {
             isActive: true
         },
+        // 移除 misleading 的全域計數，改為由 getAvailableTimeSlotsByDate 處理特定日期的計數
+        orderBy: [
+            { dayOfWeek: "asc" },
+            { startTime: "asc" }
+        ]
+    });
+};
+
+export const getTimeSlotsWithReserveCount = (dayOfWeek: number, date: Date) => {
+    return prisma.timeSlot.findMany({
+        where: {
+            isActive: true,
+            dayOfWeek: dayOfWeek
+        },
         include: {
             _count: {
                 select: {
                     reserves: {
                         where: {
-                            status: {
-                                not: 'CANCELLED'
-                            }
+                            status: { not: 'CANCELLED' },
+                            date: date
                         }
                     }
                 }
             }
         },
-        orderBy: [
-            { dayOfWeek: "asc" },
-            { startTime: "asc" }
-        ]
+        orderBy: { startTime: 'asc' }
     });
 };
 
@@ -68,4 +78,3 @@ export const deleteTimeSlot = (id: number) => {
         where: { id }
     });
 };
-

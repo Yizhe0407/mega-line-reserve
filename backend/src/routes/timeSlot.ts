@@ -5,8 +5,11 @@ import { authenticate, checkRole } from "../middleware/auth";
 
 export const router = express.Router();
 
-// 公開可用時段
+// 公開可用時段 (基本定義)
 router.get("/active", timeSlotControllers.getActiveTimeSlots);
+
+// 查詢特定日期的時段可用性
+router.get("/available", timeSlotControllers.getAvailableTimeSlots);
 
 // 以下為管理端功能
 router.use(authenticate);
