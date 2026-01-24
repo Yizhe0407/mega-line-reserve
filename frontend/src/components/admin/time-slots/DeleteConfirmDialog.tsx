@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { TimeSlot } from "@/types";
 import { Loader2 } from "lucide-react";
@@ -26,21 +25,31 @@ export function DeleteConfirmDialog({
       onOpenChange={onOpenChange}
       title="確認刪除"
     >
-      <div className="space-y-4 py-4">
+      <div className="space-y-6 py-4">
         {slot && (
-          <div className="text-sm">
-            確定要刪除 <span className="font-semibold">{weekdays[slot.dayOfWeek]}</span> 的{" "}
-            <span className="font-semibold">{slot.startTime}</span> 時段嗎？
+          <div className="text-sm text-center text-muted-foreground">
+            確定要刪除 <span className="font-semibold text-foreground">{weekdays[slot.dayOfWeek]}</span> 的{" "}
+            <span className="font-semibold text-foreground">{slot.startTime}</span> 時段嗎？
           </div>
         )}
-        <div className="flex gap-2 pt-4">
-          <Button variant="destructive" onClick={onConfirm} className="flex-1" disabled={isLoading}>
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 h-10 bg-destructive text-destructive-foreground rounded-xl font-semibold hover:bg-destructive/90 transition-all flex items-center justify-center disabled:opacity-50 text-sm"
+            disabled={isLoading}
+          >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             確認刪除
-          </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="flex-1 h-10 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50 flex items-center justify-center text-sm"
+            disabled={isLoading}
+          >
             取消
-          </Button>
+          </button>
         </div>
       </div>
     </ResponsiveDialog>

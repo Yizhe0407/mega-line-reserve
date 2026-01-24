@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import {
   Select,
@@ -9,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Loader2 } from "lucide-react";
 import type { TimeSlot } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface TimeSlotDialogProps {
   open: boolean;
@@ -51,33 +51,37 @@ export function TimeSlotDialog({
       onOpenChange={onOpenChange}
       title={`${editingSlot ? "編輯時段" : "新增時段"} - ${weekdays[selectedDayOfWeek]}`}
     >
-      <div className="space-y-4 py-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">
+      <div className="space-y-6 py-4">
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-3 block">
             時間 {!editingSlot && selectedTimes.length > 0 && `(已選 ${selectedTimes.length} 個)`}
           </label>
-          <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1">
+          <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto p-1 scrollbar-thin">
             {timeOptions.map((time) => (
-              <Button
+              <button
                 key={time}
                 type="button"
-                variant={selectedTimes.includes(time) ? "default" : "outline"}
-                size="sm"
                 onClick={() => onTimeToggle(time)}
-                className="h-9"
+                className={cn(
+                  "py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.96]",
+                  selectedTimes.includes(time)
+                    ? "bg-foreground text-background shadow-sm"
+                    : "bg-muted text-foreground hover:bg-muted/70"
+                )}
               >
                 {time}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">容量</label>
+
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-3 block">容量</label>
           <Select
             value={String(capacity)}
             onValueChange={(v) => onCapacityChange(Number(v))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full h-11 rounded-md bg-secondary/50 border-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -89,20 +93,37 @@ export function TimeSlotDialog({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2 pt-4">
-          <Button onClick={onSubmit} className="flex-1" disabled={isSubmitting || isToggling}>
+
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting || isToggling || (!editingSlot && selectedTimes.length === 0)}
+            className="flex-1 h-10 bg-foreground text-background rounded-xl font-semibold disabled:opacity-40 transition-all active:scale-[0.98] flex items-center justify-center hover:opacity-90 px-4 text-sm"
+          >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editingSlot ? "儲存" : "新增"}
-          </Button>
+          </button>
+          
           {editingSlot && (
             <>
-              <Button variant="outline" onClick={onToggleActive} disabled={isSubmitting || isToggling}>
-                {isToggling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingSlot.isActive ? "停用" : "啟用"}
-              </Button>
-              <Button variant="destructive" onClick={onDelete} aria-label="刪除時段" disabled={isSubmitting || isToggling}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <button
+                type="button"
+                onClick={onToggleActive}
+                disabled={isSubmitting || isToggling}
+                className="h-10 px-5 bg-secondary rounded-xl font-medium hover:bg-secondary/80 transition-colors flex items-center justify-center text-sm"
+              >
+                {isToggling ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingSlot.isActive ? "停用" : "啟用")}
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={isSubmitting || isToggling}
+                className="h-10 w-10 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive/20 transition-colors flex items-center justify-center shrink-0"
+                aria-label="刪除"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             </>
           )}
         </div>
