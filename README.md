@@ -1,99 +1,62 @@
 # Mega Line Reserve
 
-LINE 預約系統
+一個基於 LINE 生態系統的現代化預約管理系統。專為提升商家預約效率與顧客體驗而設計。
 
-## 技術架構
+## 專案概述 (Overview)
 
-| 服務     | 技術          | Port |
-| -------- | ------------- | ---- |
-| Frontend | Next.js       | 3000 |
-| Backend  | Hono.js + Bun | 3001 |
-| Database | MySQL 8.0     | 3306 |
-| DB Admin | phpMyAdmin    | 8080 |
+Mega Line Reserve 提供完整的預約解決方案，整合 LINE 訊息通知與直覺的後端管理介面。
 
-## 環境設定
+### 核心功能
 
-```bash
-# 複製環境變數範本
-cp .env.example .env
+- **LINE 預約整合**：顧客可直接透過 LINE 進行預約，接收即時通知。
+- **直覺管理後台**：商戶可輕鬆管理服務項目、營業時段與預約狀態。
+- **響應式設計**：完美支援桌機與行動裝置，隨時隨地管理預約。
+- **自動化衝突檢查**：智慧排除重複預約，優化資源分配。
 
-# 編輯 .env 檔案，設定資料庫密碼等
-```
+## 技術棧 (Technologies)
 
-## Docker 使用方式
+本專案採用現代化的技術開發，確保系統的高效能與高擴展性：
 
-### 開發環境（支援熱重載）
+- **Frontend**: [Next.js](https://nextjs.org/) (React), Tailwind CSS, Shadcn UI
+- **Backend**: [Hono.js](https://hono.dev/) via Bun (採用 MVC + Repository 架構)
+- **Database**: [MySQL](https://www.mysql.com/) (Managed by Prisma ORM)
+- **Containerization**: [Docker](https://www.docker.com/)
 
-```bash
-docker compose -f docker-compose.dev.yml down -v
-docker compose -f docker-compose.dev.yml up -d --build
-```
+## 快速開始 (Quick Start)
 
-> 💡 修改 `frontend/` 或 `backend/` 中的程式碼會自動觸發熱重載，不需要重啟容器！
+想要快速部署或參與開發？請參考我們的技術文件：
 
-### 生產環境
+👉 [**技術說明文件 (TECHNICAL.md)**](file:///home/yizhe/mega-line-reserve/docs/TECHNICAL.md)
 
-```bash
-# 建置並啟動所有服務
-docker compose up -d --build
+### 快速預覽
 
-# 查看服務狀態
-docker compose ps
+1. 複製環境變數範本並設定。
+2. 使用 Docker 啟動服務：`docker compose up -d`
+3. 存取 [http://localhost:3000](http://localhost:3000)
 
-# 查看 log
-docker compose logs -f
+## 專案結構 (Project Structure)
 
-# 停止所有服務
-docker compose down
-
-# 停止並清除資料
-docker compose down -v
-```
-
-### 正式部署注意事項 (Database Initialization)
-
-在正式環境部署時，系統**不會自動執行**資料庫遷移 (Migration) 與填充 (Seed)。若為首次部署或需要更新資料庫，請手動執行：
-
-```bash
-# 1. 進入後端容器
-docker exec -it mega-line-reserve-backend sh
-
-# 2. 執行 Migration (建立資料表)
-npx prisma migrate deploy
-
-# 3. 執行 Seed (選擇性：填充預設資料)
-npx prisma db seed
-```
-
-## 服務存取
-
-| 服務        | URL                   |
-| ----------- | --------------------- |
-| Frontend    | http://localhost:3000 |
-| Backend API | http://localhost:3001 |
-| phpMyAdmin  | http://localhost:8080 |
-
-## 專案結構
-
-```
+```text
 mega-line-reserve/
-├── frontend/           # Next.js 前端
-│   ├── Dockerfile
+├── frontend/           # Next.js 前端應用程式
+│   ├── src/
+│   │   ├── app/       # App Router 頁面與路由
+│   │   ├── components/# 可重用 UI 元件
+│   │   ├── hooks/     # 自訂 React Hooks
+│   │   └── lib/       # 工具函式與 API 呼叫
 │   └── ...
-├── backend/            # Hono.js 後端
-│   ├── Dockerfile
-│   ├── prisma/         # Prisma schema
-│   └── src/
-├── docker compose.yml      # 生產環境配置
-├── docker compose.dev.yml  # 開發環境配置（熱重載）
-├── .env.example            # 環境變數範本
-└── README.md
+├── backend/            # Hono.js/Bun 後端 API 服務
+│   ├── src/
+│   │   ├── controllers/# 請求處理邏輯
+│   │   ├── services/  # 業務邏輯層
+│   │   ├── model/     # 資料存取層
+│   │   └── routes/    # API 路由定義
+│   ├── prisma/        # 資料庫 Schema 與遷移腳本
+│   └── ...
+├── docs/               # 專案說明文件
+└── ...
 ```
 
-## 資料庫管理
+---
 
-透過 phpMyAdmin 管理資料庫：
-
-1. 開啟瀏覽器前往 http://localhost:8080
-2. 使用 `.env` 中設定的帳號密碼登入
-3. 預設帳號：`root` / 密碼：`rootpassword`
+_Made with ❤️ for better reservation experience._

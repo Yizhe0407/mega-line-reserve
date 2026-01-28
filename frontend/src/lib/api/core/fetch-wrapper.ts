@@ -69,6 +69,14 @@ async function fetchWrapper<T>(
     }
 
     const message = errorData.error || `HTTP ${response.status}`;
+
+    // 如果是 401 Unauthorized，發送全域事件通知前端登出
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
+    }
+
     throw new FetchError(response.status, message, {
       ...errorData,
       status: response.status,

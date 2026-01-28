@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import liff from "@line/liff";
 import { ArrowLeft, Settings, Wrench, ShieldCheck, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +13,24 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      // 收到 401 事件時，強制登出並重新整理
+      try {
+        if (liff.isLoggedIn()) {
+          liff.logout();
+        }
+      } catch (error) {
+        console.error('Logout failed:', error);
+      } finally {
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
 
   const getHeaderConfig = () => {
     switch (pathname) {
