@@ -20,8 +20,13 @@ const validateServiceIds = async (serviceIds: number[]) => {
 };
 
 // 取得預約列表 (根據權限範圍)
-export const getReserves = async (user: { id: number, role: UserRole }) => {
-    if (user.role === UserRole.ADMIN) {
+export const getReserves = async (
+    user: { id: number, role: UserRole },
+    options?: { mineOnly?: boolean }
+) => {
+    const mineOnly = options?.mineOnly ?? false;
+
+    if (user.role === UserRole.ADMIN && !mineOnly) {
         return reserveModel.getAllReserves();
     }
     return reserveModel.getReservesByUserId(user.id);

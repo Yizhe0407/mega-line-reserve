@@ -21,9 +21,9 @@ COPY backup.sh /scripts/backup.sh
 RUN chmod +x /scripts/backup.sh
 
 # 設定 cron job（每天凌晨 2:00 執行）
-RUN echo "0 2 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1" > /etc/cron.d/backup-cron
+# /etc/cron.d 格式需要包含執行使用者（root）
+RUN printf "SHELL=/bin/bash\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n0 2 * * * root /scripts/backup.sh >> /var/log/backup.log 2>&1\n" > /etc/cron.d/backup-cron
 RUN chmod 0644 /etc/cron.d/backup-cron
-RUN crontab /etc/cron.d/backup-cron
 
 # 建立 log 檔案
 RUN touch /var/log/backup.log

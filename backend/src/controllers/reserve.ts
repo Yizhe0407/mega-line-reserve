@@ -4,7 +4,9 @@ import { AuthRequest } from "../types/express";
 
 // 取得預約列表
 export const getReserves = (req: AuthRequest, res: Response, next: NextFunction) => {
-    reserveService.getReserves(req.user!)
+    const mineOnly = req.query.mine === 'true';
+
+    reserveService.getReserves(req.user!, { mineOnly })
         .then((reserves) => res.json(reserves))
         .catch(next);
 };

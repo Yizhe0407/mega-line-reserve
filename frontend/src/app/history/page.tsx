@@ -145,7 +145,7 @@ export default function RecordPage() {
       const idToken = liff.getIDToken();
       if (!idToken) throw new Error('無法取得 ID token。');
 
-      const data = (await getReserves(idToken)) as ReserveWithServices[];
+      const data = (await getReserves(idToken, { mineOnly: true })) as ReserveWithServices[];
       return data;
     },
     {

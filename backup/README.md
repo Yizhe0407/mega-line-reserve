@@ -135,6 +135,26 @@ docker compose up -d --build backup
 
 ## 疑難排解
 
+### 排程有跑但備份檔案是空的（或只有幾 KB）
+
+若檔名像 `mysql_backup__2026....sql.gz`（資料庫名稱是空白），代表 cron 執行時沒拿到 `MYSQL_DATABASE` 或密碼環境變數。
+
+請重建 backup 映像並重啟服務：
+
+```bash
+docker compose up -d --build backup
+```
+
+重建後可用以下方式快速驗證：
+
+```bash
+# 手動跑一次
+docker exec mega-line-reserve-backup /scripts/backup.sh
+
+# 確認檔名包含資料庫名稱，且大小不是只有幾 KB
+docker exec mega-line-reserve-backup ls -lh /backup
+```
+
 ### 檢查 cron 是否運行
 
 ```bash

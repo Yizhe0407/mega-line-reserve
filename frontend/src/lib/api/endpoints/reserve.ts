@@ -4,8 +4,13 @@ import { Reserve, CreateReserveDTO, UpdateReserveDTO } from '@/types/reserve';
 /**
  * 取得預約列表
  */
-export const getReserves = (token: string): Promise<Reserve[]> => {
-  return get<Reserve[]>('/api/reserve', token);
+export const getReserves = (
+  token: string,
+  options?: { mineOnly?: boolean }
+): Promise<Reserve[]> => {
+  const mineOnly = options?.mineOnly ?? false;
+  const query = mineOnly ? '?mine=true' : '';
+  return get<Reserve[]>(`/api/reserve${query}`, token);
 };
 
 /**
