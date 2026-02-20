@@ -32,20 +32,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 ### 生產環境
 
 ```bash
-# 建置並啟動所有服務
 docker compose up -d --build
-
-# 查看服務狀態
-docker compose ps
-
-# 查看 log
-docker compose logs -f
-
-# 停止所有服務
-docker compose down
-
-# 停止並清除資料 (磁碟卷)
-docker compose down -v
 ```
 
 ### 資料庫初始化 (Database Initialization)
