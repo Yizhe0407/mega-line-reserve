@@ -20,12 +20,13 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // 如果需要代理後端 API
+  // 將 /api/* 代理到後端容器（伺服器端轉發，須走內網位址，
+  // 避免轉發回 NEXT_PUBLIC_API_URL 公開網域造成迴圈）
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/:path*`,
+        destination: `${process.env.INTERNAL_API_URL || 'http://localhost:3001'}/api/:path*`,
       },
     ];
   },

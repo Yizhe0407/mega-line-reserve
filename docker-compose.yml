@@ -93,6 +93,8 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      # /api/* 伺服器端轉發目標（容器內網位址，避免轉發回公開網域造成迴圈）
+      INTERNAL_API_URL: http://backend:3001
     ports:
       - "3000:3000"
     depends_on:
