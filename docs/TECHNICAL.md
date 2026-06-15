@@ -80,6 +80,14 @@ npx prisma db seed
 - **Backend API**: [http://localhost:3001](http://localhost:3001)
 - **phpMyAdmin**: [http://localhost:8080](http://localhost:8080) (僅綁定主機 localhost，需 SSH tunnel 存取；帳號：`root` / 密碼為 `MYSQL_ROOT_PASSWORD`)
 
+  正式環境透過 SSH tunnel 連線範例：
+
+  ```bash
+  ssh -L 8080:127.0.0.1:8080 yizhe@10.0.0.106
+  ```
+
+  連線後於本機開啟 [http://localhost:8080](http://localhost:8080) 即可存取。
+
 ## 專案結構
 
 本專案將前後端程式碼整合於單一儲存庫中進行管理，後端採用 **MVC + Repository** 架構以確保職責分離：
