@@ -27,6 +27,9 @@ export const getAllReserves = ({ skip, take }: { skip?: number; take?: number } 
                 timeSlot: {
                     startTime: 'asc'
                 }
+            },
+            {
+                id: 'asc'
             }
         ]
     });

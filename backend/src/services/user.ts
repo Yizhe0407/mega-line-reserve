@@ -114,8 +114,8 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
         }
     }
 
-    // 業務邏輯檢查：驗證車牌格式（如果有更新）
-    if (updateData.license) {
+    // 業務邏輯檢查：驗證車牌格式（如果有更新，null 代表清空，不需驗證格式）
+    if (updateData.license !== undefined && updateData.license !== null) {
         const normalizedLicense = normalizeLicense(updateData.license);
         if (!isValidLicense(normalizedLicense)) {
             throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");

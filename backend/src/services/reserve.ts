@@ -3,9 +3,9 @@ import * as timeSlotModel from "../model/timeSlot";
 import * as serviceModel from "../model/service";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
 import { ValidationError, NotFoundError } from "../types/errors";
-import { Prisma, UserRole } from "@prisma/client";
-import { prisma } from "../config/database";
+import { UserRole } from "@prisma/client";
 import { isValidLicense, normalizeLicense } from "../utils/validators";
+import { runSerializableTransaction } from "../utils/db";
 
 const validateServiceIds = async (serviceIds: number[]) => {
     if (!serviceIds || serviceIds.length === 0) {
@@ -95,8 +95,8 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
 
     // 2. 建立預約
     // 容量檢查與寫入需在同一個交易內以 Serializable 隔離層級執行，
-    // 避免並發請求同時通過容量檢查導致超賣
-    return prisma.$transaction(async (tx) => {
+    // 避免並發請求同時通過容量檢查導致超賣；衝突時重試數次
+    return runSerializableTransaction(async (tx) => {
         const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date, tx);
         if (reserveCount >= capacity) {
             throw new ValidationError("此時段已額滿");
@@ -106,7 +106,7 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
             ...data,
             serviceIds: validServiceIds
         }, tx);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    });
 };
 
 // 更新預約 (管理員變更狀態或備註)
@@ -175,8 +175,8 @@ export const updateReserve = async (
             const capacity = timeSlot.capacity ?? 1;
 
             // 容量檢查與寫入需在同一個交易內以 Serializable 隔離層級執行，
-            // 避免並發請求同時通過容量檢查導致超賣
-            return prisma.$transaction(async (tx) => {
+            // 避免並發請求同時通過容量檢查導致超賣；衝突時重試數次
+            return runSerializableTransaction(async (tx) => {
                 const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(
                     newTimeSlotId,
                     newDateStr,
@@ -188,7 +188,7 @@ export const updateReserve = async (
                 }
 
                 return reserveModel.updateReserve(id, updatePayload, tx);
-            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+            });
         }
     }
 
