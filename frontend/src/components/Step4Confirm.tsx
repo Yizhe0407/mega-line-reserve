@@ -3,9 +3,17 @@ import { useStepStore } from "@/store/step-store"
 import StepButtonGroup from "./StepButtonGroup";
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import type { Service } from "@/types";
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 font-bold text-sm mb-3">
+      <span className="h-3.5 w-[3px] rounded-full bg-brand" />
+      {children}
+    </div>
+  );
+}
 
 export default function Step4Confirm() {
   const step1Data = useStepStore((state) => state.step1Data)
@@ -26,20 +34,13 @@ export default function Step4Confirm() {
 
   return (
     <>
-      <div className="px-4 pt-20">
-        <Card className="shadow-none border-none">
-          <CardHeader>
-            <CardTitle className="text-center">確認預約資訊</CardTitle>
-          </CardHeader>
+      <div className="px-4 pt-24">
+        <Card className="shadow-none border-none gap-4">
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div>
-                <h3 className="font-bold text-sm mb-2">基本資料</h3>
+                <SectionTitle>基本資料</SectionTitle>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">姓名</span>
-                    <span className="text-sm font-bold">{step1Data.name}</span>
-                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">手機號碼</span>
                     <span className="text-sm font-bold">{step1Data.phone}</span>
@@ -54,15 +55,18 @@ export default function Step4Confirm() {
               <Separator />
 
               <div>
-                <h3 className="font-bold text-sm mb-2">服務項目</h3>
+                <SectionTitle>服務項目</SectionTitle>
                 <div className="space-y-2">
                 <div className="flex flex-col gap-2">
                     <span className="text-sm text-muted-foreground">選擇項目</span>
                     <div className="flex flex-wrap gap-2">
                       {selectedServices.map(service => (
-                        <Badge key={service.id} variant="secondary">
+                        <span
+                          key={service.id}
+                          className="rounded-lg border border-border bg-transparent px-2.5 py-1 text-xs text-secondary-foreground"
+                        >
                           {service.name}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -82,15 +86,15 @@ export default function Step4Confirm() {
               <Separator />
 
               <div>
-                <h3 className="font-bold text-sm mb-2">預約時間</h3>
-                <div className="space-y-2">
+                <SectionTitle>預約時間</SectionTitle>
+                <div className="rounded-2xl bg-brand-soft px-4 py-3.5 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">日期</span>
-                    <span className="text-sm font-bold">{step3Data.date}</span>
+                    <span className="text-sm text-brand-strong/80">日期</span>
+                    <span className="text-sm font-bold text-brand-strong">{step3Data.date}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">時間</span>
-                    <span className="text-sm font-bold">{step3Data.time}</span>
+                    <span className="text-sm text-brand-strong/80">時間</span>
+                    <span className="text-sm font-bold text-brand-strong">{step3Data.time}</span>
                   </div>
                 </div>
               </div>

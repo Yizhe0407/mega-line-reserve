@@ -41,8 +41,8 @@ const services = [
   {
     name: '全車健檢',
     description: '底盤檢查、引擎檢查、電系檢查、油水檢查',
-    price: 500,
-    duration: 45,
+    price: null,
+    duration: null,
     isActive: true,
   },
   {
@@ -55,11 +55,22 @@ const services = [
   {
     name: '火星塞更換',
     description: '火星塞拆裝更換、點火系統檢查',
-    price: 1800,
+    price: null,
     duration: 45,
     isActive: true,
   },
 ];
+
+// 週一到週六，08:00-17:00，每小時一個時段
+// 12:00、13:00 為午休交接時段，僅開放 1 個名額
+const timeSlots = Array.from({ length: 6 }, (_, i) => i + 1).flatMap((dayOfWeek) =>
+  Array.from({ length: 10 }, (_, i) => 8 + i).map((hour) => ({
+    dayOfWeek,
+    startTime: `${String(hour).padStart(2, '0')}:00`,
+    capacity: hour === 12 || hour === 13 ? 1 : 2,
+    isActive: true,
+  })),
+);
 
 async function main() {
   console.log('開始建立 seed 資料...');
@@ -67,12 +78,22 @@ async function main() {
   for (const service of services) {
     await prisma.service.upsert({
       where: { name: service.name },
-      update: {},
+      update: service,
       create: service,
     });
   }
 
   console.log(`✅ 已建立 ${services.length} 個服務項目`);
+
+  for (const timeSlot of timeSlots) {
+    await prisma.timeSlot.upsert({
+      where: { dayOfWeek_startTime: { dayOfWeek: timeSlot.dayOfWeek, startTime: timeSlot.startTime } },
+      update: timeSlot,
+      create: timeSlot,
+    });
+  }
+
+  console.log(`✅ 已建立 ${timeSlots.length} 個可預約時段`);
 }
 
 main()

@@ -16,16 +16,6 @@ interface FetchOptions extends RequestInit {
   token?: string;
 }
 
-function extractHtmlErrorMessage(html: string, fallback: string): string {
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch?.[1]) {
-    return titleMatch[1].trim();
-  }
-
-  const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  return text ? text.slice(0, 200) : fallback;
-}
-
 /**
  * 統一的 fetch 封裝函式
  */
@@ -44,31 +34,36 @@ async function fetchWrapper<T>(
     },
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, config);
+  } catch (err) {
+    console.error('網路請求失敗:', err);
+    throw new FetchError(0, '網路連線失敗，請稍後再試', {
+      url: `${API_URL}${endpoint}`,
+    });
+  }
 
   // 處理錯誤回應
   if (!response.ok) {
     const contentType = response.headers.get('content-type') || '';
-    let errorData: ApiError = { error: '未知錯誤' };
+    let errorData: ApiError = { error: '伺服器發生錯誤，請稍後再試' };
 
     try {
       if (contentType.includes('application/json')) {
         errorData = (await response.json()) as ApiError;
       } else {
+        // 非 JSON 回應（例如代理伺服器或框架產生的錯誤頁面）
+        // 內容可能包含技術細節，僅記錄於 console，不直接顯示給使用者
         const text = await response.text();
-        if (contentType.includes('text/html')) {
-          const fallback = response.statusText || `HTTP ${response.status}`;
-          errorData = { error: extractHtmlErrorMessage(text, fallback) };
-        } else {
-          const trimmed = text.trim();
-          errorData = { error: trimmed ? trimmed.slice(0, 200) : '未知錯誤' };
-        }
+        console.error('非預期的錯誤回應內容:', text);
+        errorData = { error: '伺服器發生錯誤，請稍後再試' };
       }
     } catch {
-      errorData = { error: '未知錯誤' };
+      errorData = { error: '伺服器發生錯誤，請稍後再試' };
     }
 
-    const message = errorData.error || `HTTP ${response.status}`;
+    const message = errorData.error || `伺服器發生錯誤，請稍後再試`;
 
     // 如果是 401 Unauthorized，發送全域事件通知前端登出
     if (response.status === 401) {

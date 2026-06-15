@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { useStepStore } from "@/store/step-store";
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAvailableTimeSlots } from "@/hooks/useAvailableTimeSlots";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Step3DateTime() {
   const step3Data = useStepStore((state) => state.step3Data);
@@ -32,15 +33,21 @@ export default function Step3DateTime() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [step3Data.date, timeSlots]);
 
+  const morningSlots = useMemo(
+    () => filteredSlots.filter((slot) => Number(slot.startTime.split(":")[0]) < 12),
+    [filteredSlots]
+  );
+  const afternoonSlots = useMemo(
+    () => filteredSlots.filter((slot) => Number(slot.startTime.split(":")[0]) >= 12),
+    [filteredSlots]
+  );
+
   return (
     <>
-      <div className="px-4 pt-20">
-        <Card className="shadow-none border-none">
-          <CardHeader>
-            <CardTitle className="text-center">選擇日期與時間</CardTitle>
-          </CardHeader>
+      <div className="px-4 pt-24">
+        <Card className="shadow-none border-none gap-4">
           <CardContent className="space-y-6">
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 min-h-[380px]">
+            <div className="rounded-2xl border border-border bg-secondary/50 p-2">
               <Calendar
                 mode="single"
                 locale={zhTW}
@@ -63,7 +70,7 @@ export default function Step3DateTime() {
             <Separator />
 
             {!step3Data.date ? (
-              <div className="text-center py-8 text-[#a3a3a3]">
+              <div className="text-center py-8 text-muted-foreground">
                 <p className="text-sm">請先選擇預約日期</p>
               </div>
             ) : isLoading ? (
@@ -71,48 +78,66 @@ export default function Step3DateTime() {
                 <Loader2 className="w-6 h-6 animate-spin" />
                 <p className="text-sm">正在查詢可預約時段...</p>
               </div>
+            ) : filteredSlots.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <p className="text-sm">當天沒有可預約時段</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                {filteredSlots.map((slot) => {
-                  // _count.reserves 現在只會包含該日期的非取消預約
-                  const reserveCount = slot._count?.reserves ?? 0;
-                  const isFull = reserveCount >= slot.capacity;
+              <div className="space-y-5">
+                {[
+                  { label: "上午", slots: morningSlots },
+                  { label: "下午", slots: afternoonSlots },
+                ]
+                  .filter((group) => group.slots.length > 0)
+                  .map((group) => (
+                    <div key={group.label} className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                        {group.label}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        {group.slots.map((slot) => {
+                          // _count.reserves 現在只會包含該日期的非取消預約
+                          const reserveCount = slot._count?.reserves ?? 0;
+                          const remaining = slot.capacity - reserveCount;
+                          const isFull = remaining <= 0;
+                          const isSelected = step3Data.timeSlotId === slot.id;
+                          const isLow = !isFull && remaining <= 2;
 
-                  return (
-                    <Button
-                      disabled={
-                        !step3Data.date || // 尚未選擇日期時，按鈕不可點
-                        isPastTime(step3Data.date, slot.timeLabel) || // 如果選的是今天，且這個時段已經過了，不可點
-                        isFull // 時段已額滿
-                      }
-                      key={slot.id}
-                      variant={
-                        step3Data.timeSlotId === slot.id ? "default" : "outline"
-                      }
-                      onClick={() =>
-                        setStep3Data({
-                          time: slot.timeLabel,
-                          timeSlotId: slot.id,
-                        })
-                      }
-                      className="h-12 text-sm relative"
-                    >
-                      {slot.timeLabel}
-                      {isFull && <span className="ml-1 text-xs text-red-500 font-medium">(額滿)</span>}
-                      {/* Optional: Show remaining spots? */}
-                      {!isFull && slot.capacity > 1 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white shadow-sm ring-1 ring-white">
-                          {slot.capacity - reserveCount}
-                        </span>
-                      )}
-                    </Button>
-                  );
-                })}
-                {filteredSlots.length === 0 && (
-                  <div className="col-span-3 text-center py-6 text-[#a3a3a3]">
-                    <p className="text-sm">當天沒有可預約時段</p>
-                  </div>
-                )}
+                          let capacityClass = "text-muted-foreground";
+                          if (isSelected) capacityClass = "text-primary-foreground/85";
+                          else if (isFull) capacityClass = "text-destructive";
+                          else if (isLow) capacityClass = "text-brand-strong";
+
+                          return (
+                            <Button
+                              disabled={
+                                !step3Data.date ||
+                                isPastTime(step3Data.date, slot.timeLabel) ||
+                                isFull
+                              }
+                              key={slot.id}
+                              variant={isSelected ? "default" : "outline"}
+                              onClick={() =>
+                                setStep3Data({
+                                  time: slot.timeLabel,
+                                  timeSlotId: slot.id,
+                                })
+                              }
+                              className="h-14 !flex-col gap-0.5 text-sm"
+                            >
+                              <span className="font-semibold text-[15px]">{slot.timeLabel}</span>
+                              {(isFull || slot.capacity > 1) && (
+                                <span className={cn("text-[10px] leading-none", capacityClass)}>
+                                  {isFull ? "額滿" : `剩 ${remaining} 位`}
+                                </span>
+                              )}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
           </CardContent>

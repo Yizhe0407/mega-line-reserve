@@ -5,8 +5,12 @@ import { AuthRequest } from "../types/express";
 // 取得預約列表
 export const getReserves = (req: AuthRequest, res: Response, next: NextFunction) => {
     const mineOnly = req.query.mine === 'true';
+    const parsedPage = req.query.page ? Number(req.query.page) : undefined;
+    const parsedPageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
+    const page = Number.isFinite(parsedPage) ? parsedPage : undefined;
+    const pageSize = Number.isFinite(parsedPageSize) ? parsedPageSize : undefined;
 
-    reserveService.getReserves(req.user!, { mineOnly })
+    reserveService.getReserves(req.user!, { mineOnly, page, pageSize })
         .then((reserves) => res.json(reserves))
         .catch(next);
 };

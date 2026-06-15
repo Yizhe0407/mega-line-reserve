@@ -60,8 +60,8 @@ export default function AdminDashboardPage() {
     <div className="pb-20">
       <main className="max-w-5xl mx-auto px-4 md:px-6 py-8 space-y-8">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">功能總覽</h2>
-          <p className="text-muted-foreground mt-1">
+          <h2 className="text-xl font-medium tracking-[0.05em]">功能總覽</h2>
+          <p className="text-muted-foreground mt-1.5 text-sm tracking-[0.01em]">
             選擇下方項目以開始管理您的預約系統
           </p>
         </div>
@@ -77,21 +77,21 @@ export default function AdminDashboardPage() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link 
-                key={item.href} 
-                href={item.href} 
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all hover:border-foreground/20 hover:shadow-md active:scale-[0.99]"
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-colors hover:border-primary/35 active:bg-muted/20"
               >
                 <div className="flex items-start justify-between">
-                  <div className="p-3 rounded-xl bg-secondary group-hover:bg-foreground group-hover:text-background transition-colors duration-300">
-                    <Icon className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-primary group-hover:border-primary/40 transition-colors">
+                    <Icon className="w-[22px] h-[22px]" strokeWidth={1.5} />
                   </div>
-                  <ArrowRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                  <ArrowRight className="w-[18px] h-[18px] text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all" strokeWidth={1.5} />
                 </div>
-                
-                <div className="mt-5 space-y-2">
-                  <h3 className="font-bold text-lg">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+
+                <div className="mt-5 space-y-1.5">
+                  <h3 className="font-semibold text-[17px] tracking-[0.01em]">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed tracking-[0.01em]">
                     {item.description}
                   </p>
                 </div>

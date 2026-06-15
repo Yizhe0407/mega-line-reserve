@@ -15,9 +15,9 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
       variant="ghost"
       onClick={onClick}
       className={cn(
-        "group w-full h-auto text-left p-5 rounded-2xl border transition-all duration-200 justify-start items-start whitespace-normal hover:bg-transparent",
+        "group w-full h-auto text-left p-5 rounded-xl border transition-colors duration-200 justify-start items-start whitespace-normal hover:bg-transparent",
         service.isActive
-          ? "bg-card border-border hover:border-foreground/20 hover:shadow-sm"
+          ? "bg-card border-border hover:border-primary/35"
           : "bg-muted/30 border-border/50 opacity-70 hover:opacity-100"
       )}
     >
@@ -25,13 +25,13 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 w-full">
           <h3 className={cn(
-            "font-semibold text-lg tracking-tight",
+            "font-semibold text-[17px] tracking-[0.01em]",
             !service.isActive && "text-muted-foreground"
           )}>
             {service.name}
           </h3>
           {service.isActive ? (
-             <ChevronRight className="w-5 h-5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
+             <ChevronRight className="w-[18px] h-[18px] text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" strokeWidth={1.5} />
           ) : (
             <span className="shrink-0 text-[10px] font-medium bg-muted text-muted-foreground px-2 py-1 rounded-md">
               已停用
@@ -53,7 +53,7 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
         {/* Footer Details */}
         <div className="flex items-center gap-4 pt-2 mt-2 border-t border-border/50 w-full">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <CircleDollarSign className="w-4 h-4" />
+            <CircleDollarSign className="w-4 h-4" strokeWidth={1.5} />
             {service.price !== null && service.price !== undefined ? (
               <span className="font-medium text-foreground tabular-nums">
                 {service.price}
@@ -64,7 +64,7 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
           </div>
           
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
+            <Clock className="w-4 h-4" strokeWidth={1.5} />
             {service.duration !== null && service.duration !== undefined ? (
               <span className="font-medium text-foreground tabular-nums">
                 {service.duration} 分

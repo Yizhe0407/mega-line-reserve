@@ -61,9 +61,9 @@ export default function AdminLayout({
           showBack: false,
           maxWidth: "max-w-5xl",
           extra: (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-full">
-              <ShieldCheck className="w-4 h-4" />
-              <span className="font-medium">管理員已登入</span>
+            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground border border-border px-3 py-1.5 rounded-full">
+              <ShieldCheck className="w-[15px] h-[15px]" strokeWidth={1.5} />
+              <span className="font-normal tracking-[0.02em]">管理員已登入</span>
             </div>
           ),
         };
@@ -89,10 +89,10 @@ export default function AdminLayout({
                 </Link>
               ) : null}
               
-              <div className="w-8 h-8 bg-foreground rounded-lg flex items-center justify-center shadow-sm">
-                <Icon className="w-4.5 h-4.5 text-background" />
+              <div className="w-9 h-9 rounded-[10px] border border-border bg-card flex items-center justify-center">
+                <Icon className="w-[17px] h-[17px] text-primary" strokeWidth={1.5} />
               </div>
-              <h1 className="text-lg font-bold tracking-tight">{config.title}</h1>
+              <h1 className="text-[17px] font-medium tracking-[0.03em]">{config.title}</h1>
             </div>
             {config.extra}
           </div>

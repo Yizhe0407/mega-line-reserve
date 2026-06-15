@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, ValidationError, AuthenticationError, NewUserError } from '../types/errors';
 
 export const errorHandler = (
@@ -10,11 +11,20 @@ export const errorHandler = (
   console.error(`[Error] ${err.name}: ${err.message}`);
 
   if (err instanceof NewUserError) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: err.message,
       isNewUser: true,
       lineProfile: err.lineProfile
     });
+  }
+
+  // P2002: Unique constraint failed（例如手機號碼已被其他帳號註冊）
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    const target = (err.meta?.target as string[] | undefined) ?? [];
+    if (target.includes('phone')) {
+      return res.status(409).json({ error: '此手機號碼已被其他帳號註冊，請確認後再試' });
+    }
+    return res.status(409).json({ error: '資料重複，請確認後再試' });
   }
 
   if (err instanceof ValidationError) {

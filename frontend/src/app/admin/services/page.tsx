@@ -173,10 +173,11 @@ export default function ServiceAdminPage() {
 
             <Button
                type="button"
+               variant="ghost"
                onClick={serviceDialog.openAddDialog}
-               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background transition-all hover:bg-foreground/90 hover:scale-[1.02] active:scale-[0.98] shadow-sm ml-auto"
+               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary bg-card px-4 text-sm font-medium text-primary transition-colors hover:bg-accent ml-auto"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" strokeWidth={1.75} />
               新增服務
             </Button>
         </div>

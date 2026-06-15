@@ -111,25 +111,6 @@ export function useLiffMessage() {
                                         contents: [
                                             {
                                                 type: "text",
-                                                text: "姓名 Name",
-                                                size: "md",
-                                                color: "#555555"
-                                            },
-                                            {
-                                                type: "text",
-                                                text: step1Data.name ?? "",
-                                                size: "md",
-                                                color: "#111111",
-                                                align: "end"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: "box",
-                                        layout: "horizontal",
-                                        contents: [
-                                            {
-                                                type: "text",
                                                 text: "手機號碼 Phone",
                                                 size: "md",
                                                 color: "#555555"

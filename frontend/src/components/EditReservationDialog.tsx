@@ -155,7 +155,6 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
             value={license}
             onChange={(e) => setLicense(e.target.value.toUpperCase())}
             placeholder="例如：ABC-1234"
-            className="rounded-xl border-neutral-200"
           />
         </div>
 
@@ -171,10 +170,10 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
                   onClick={() => handleServiceToggle(service.id)}
                   aria-pressed={isSelected}
                   className={
-                    `rounded-full border px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-medium transition-colors ${
+                    `rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
                       isSelected
-                        ? "border-neutral-900 bg-neutral-900 text-white"
-                        : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-muted-foreground hover:border-foreground/30"
                     }`
                   }
                 >
@@ -187,7 +186,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
 
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-neutral-700">日期</Label>
-          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-2 min-h-[380px]">
+          <div className="rounded-2xl border border-border bg-secondary/50 p-2">
             <Calendar
               mode="single"
               selected={date}
@@ -204,7 +203,7 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
 
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-neutral-700">到府牽車</Label>
-          <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
             <Checkbox
               id="edit-pickup"
               checked={isPickup}
@@ -219,33 +218,33 @@ export default function EditReservationDialog({ isOpen, onClose, reserve, onUpda
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-neutral-700">時間</Label>
           {!date ? (
-            <div className="rounded-2xl border border-dashed border-neutral-200 py-6 text-center text-sm text-neutral-400">
+            <div className="rounded-xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
               請先選擇日期
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {isLoadingSlots ? (
                 <div className="col-span-3 flex justify-center py-4"><Loader2 className="animate-spin" /></div>
               ) : filteredSlots.length > 0 ? (
                 filteredSlots.map(slot => {
                   const isFull = (slot._count?.reserves ?? 0) >= slot.capacity;
                   const isCurrentSlot = slot.id === reserve.timeSlotId && format(date, 'yyyy-MM-dd') === reserve.date;
-                  const disableBtn = !isCurrentSlot && isFull; 
-                  
+                  const disableBtn = !isCurrentSlot && isFull;
+
                   return (
                     <Button
                       key={slot.id}
                       variant={timeSlotId === slot.id ? 'default' : 'outline'}
                       disabled={disableBtn || isPastTime(format(date, 'yyyy-MM-dd'), slot.startTime)}
                       onClick={() => setTimeSlotId(slot.id)}
-                      className="h-9 rounded-full px-2 text-xs"
+                      className="h-9 rounded-xl px-2 text-xs"
                     >
                       {slot.startTime} {disableBtn && '(滿)'}
                     </Button>
                   )
                 })
               ) : (
-                <div className="col-span-3 rounded-2xl border border-dashed border-neutral-200 py-4 text-center text-sm text-neutral-400">
+                <div className="col-span-3 rounded-xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
                   此日無時段
                 </div>
               )}

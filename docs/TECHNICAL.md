@@ -7,7 +7,7 @@
 | 服務     | 技術          | Port |
 | -------- | ------------- | ---- |
 | Frontend | Next.js       | 3000 |
-| Backend  | Hono.js + Bun | 3001 |
+| Backend  | Express + Node.js | 3001 |
 | Database | MySQL 8.0     | 3306 |
 | DB Admin | phpMyAdmin    | 8080 |
 
@@ -50,11 +50,35 @@ npx prisma migrate deploy
 npx prisma db seed
 ```
 
+### 更新 Seed 資料 (Update Seed Data)
+
+修改 `backend/prisma/seed.ts` 後（例如調整服務的價格/時長、時段名額），`seed.ts` 內的
+`upsert` 已將 `update` 設為對應資料物件，重新執行 seed 會以新內容覆蓋既有資料列
+（未列出的欄位不受影響；若要清空某欄位請明確設為 `null`）。
+
+開發環境（`docker-compose.dev.yml`）：
+
+```bash
+# 容器啟動時會自動執行 migrate deploy + db seed，
+# 修改 seed.ts 後重啟 backend 容器即可套用新資料
+docker compose -f docker-compose.dev.yml restart backend
+
+# 或不重啟容器，直接在容器內重新執行 seed
+docker exec -it mega-line-reserve-backend-dev pnpm prisma db seed
+```
+
+生產環境（`docker-compose.yml`）：
+
+```bash
+docker exec -it mega-line-reserve-backend sh
+npx prisma db seed
+```
+
 ## 服務存取
 
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Backend API**: [http://localhost:3001](http://localhost:3001)
-- **phpMyAdmin**: [http://localhost:8080](http://localhost:8080) (預設帳號：`root` / 密碼：`rootpassword`)
+- **phpMyAdmin**: [http://localhost:8080](http://localhost:8080) (僅綁定主機 localhost，需 SSH tunnel 存取；帳號：`root` / 密碼為 `MYSQL_ROOT_PASSWORD`)
 
 ## 專案結構
 
@@ -72,7 +96,7 @@ mega-line-reserve/
 │   │   └── types/         # TypeScript 型別定義
 │   ├── Dockerfile
 │   └── package.json
-├── backend/                # Hono.js 後端 API (Bun 執行環境)
+├── backend/                # Express 後端 API (Node.js 執行環境)
 │   ├── src/
 │   │   ├── controllers/   # Controller 層：處理 HTTP 請求與回應
 │   │   ├── services/      # Service 層：處理核心業務邏輯與流程

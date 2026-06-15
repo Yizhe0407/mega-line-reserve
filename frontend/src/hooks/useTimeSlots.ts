@@ -8,6 +8,7 @@ import {
   updateTimeSlot as updateTimeSlotApi,
   deleteTimeSlot as deleteTimeSlotApi,
 } from "@/lib/api/endpoints/timeSlot";
+import { AUTH_TOKEN_ERROR_MESSAGE } from "@/constants/errors";
 import type { TimeSlot } from "@/types";
 
 export function useTimeSlots(enabled = true) {
@@ -18,7 +19,7 @@ export function useTimeSlots(enabled = true) {
     async () => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       const data = await getAllTimeSlots(idToken);
       return Array.isArray(data) ? data : [];
@@ -60,7 +61,7 @@ export function useTimeSlots(enabled = true) {
     }) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await createTimeSlotApi(data, idToken);
       await mutate();
@@ -80,7 +81,7 @@ export function useTimeSlots(enabled = true) {
     ) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await updateTimeSlotApi(id, data, idToken);
       await mutate();
@@ -92,7 +93,7 @@ export function useTimeSlots(enabled = true) {
     async (id: number) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await deleteTimeSlotApi(id, idToken);
       await mutate();
@@ -126,7 +127,7 @@ export function useTimeSlots(enabled = true) {
         setActionError(null);
         const idToken = liff.getIDToken();
         if (!idToken) {
-          throw new Error("無法取得 ID token");
+          throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
         }
 
         const sourceSlots = groupedSlots[sourceDay] || [];

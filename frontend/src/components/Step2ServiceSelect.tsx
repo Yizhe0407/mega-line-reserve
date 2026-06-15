@@ -4,14 +4,13 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useStepStore } from "@/store/step-store"
 import { useStepServices } from "@/hooks/useStepServices"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import StepButtonGroup from "./StepButtonGroup";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Service } from "@/types"
-import { Car } from "lucide-react"
+import { Check } from "lucide-react"
 
 
 export default function Step2ServiceSelect() {
@@ -44,14 +43,14 @@ export default function Step2ServiceSelect() {
 
   return (
     <>
-      <div className="px-4 pt-20">
-        <Card className="shadow-none border-none">
-          <CardHeader>
-            <CardTitle className="text-center">預約項目</CardTitle>
-          </CardHeader>
+      <div className="px-4 pt-24">
+        <Card className="shadow-none border-none gap-4">
           <CardContent className="space-y-6">
             <div className="space-y-3">
-              <p className="text-md font-bold">服務項目（可複選）</p>
+              <div className="flex items-center gap-2.5">
+                <span className="h-4 w-[3px] rounded-full bg-brand" />
+                <p className="text-base font-bold tracking-tight">服務項目（可複選）</p>
+              </div>
               <div className="grid gap-3">
                 {isLoading ? (
                   <>
@@ -60,24 +59,45 @@ export default function Step2ServiceSelect() {
                     <Skeleton className="h-16 w-full" />
                   </>
                 ) : (
-                  activeServices.map((service: Service) => (
+                  activeServices.map((service: Service) => {
+                    const isSelected = step2Data?.selectServe?.includes(service.id);
+                    return (
                       <div
                         key={service.id}
                         onClick={() => toggleService(service.id)}
                         className={cn(
-                          "flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-colors",
-                          step2Data?.selectServe?.includes(service.id)
-                            ? "bg-black text-white"
-                            : "bg-[#f8f8f8] hover:bg-gray-200"
+                          "flex items-center gap-3 px-4 py-3.5 rounded-2xl border text-left cursor-pointer transition-all active:scale-[0.99]",
+                          isSelected
+                            ? "border-brand bg-brand-soft"
+                            : "border-border bg-card hover:border-foreground/25"
                         )}
                       >
-                        <span className="font-medium text-base">{service.name}</span>
-                        <span className={cn(
-                          "text-sm",
-                          step2Data?.selectServe?.includes(service.id) ? "text-gray-300" : "text-gray-600"
-                        )}>{service.duration}</span>
+                        <div
+                          className={cn(
+                            "flex h-6 w-6 items-center justify-center rounded-full border shrink-0 transition-colors",
+                            isSelected
+                              ? "border-brand bg-brand text-white"
+                              : "border-border bg-transparent"
+                          )}
+                        >
+                          {isSelected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                          <span className="font-medium text-base">{service.name}</span>
+                          {(service.duration != null || service.price != null) && (
+                            <span className="text-xs text-muted-foreground mt-0.5">
+                              {[
+                                service.duration != null && `${service.duration} 分鐘`,
+                                service.price != null && `NT$ ${service.price}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -88,9 +108,12 @@ export default function Step2ServiceSelect() {
                 !(otherServiceId ? step2Data?.selectServe?.includes(otherServiceId) : false) && "hidden"
               )}
             >
-              <Label htmlFor="other-service" className="text-md font-bold">
-                其他服務需求
-              </Label>
+              <div className="flex items-center gap-2.5">
+                <span className="h-4 w-[3px] rounded-full bg-brand" />
+                <Label htmlFor="other-service" className="text-base font-bold tracking-tight">
+                  其他服務需求
+                </Label>
+              </div>
               <Textarea
                 id="other-service"
                 name="other-service"
@@ -108,29 +131,42 @@ export default function Step2ServiceSelect() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-md font-bold">額外服務</p>
-              <div 
-                className="flex items-center space-x-2 px-4 py-3 rounded-xl cursor-pointer" 
-                style={{ backgroundColor: '#f8f8f8' }}
+              <div className="flex items-center gap-2.5">
+                <span className="h-4 w-[3px] rounded-full bg-brand" />
+                <p className="text-base font-bold tracking-tight">額外服務</p>
+              </div>
+              <div
+                role="checkbox"
+                aria-checked={step2Data?.extra || false}
+                tabIndex={0}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer bg-secondary/50 active:scale-[0.99] transition-all"
                 onClick={() => setStep2Data({
                   ...step2Data,
                   extra: !step2Data?.extra,
                 })}
-              >
-                <Checkbox
-                  id="pickup"
-                  checked={step2Data?.extra || false}
-                  onCheckedChange={(checked) => {
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
                     setStep2Data({
                       ...step2Data,
-                      extra: checked === true,
-                    })
-                  }}
-                />
-                <Car className="h-5 w-5 text-gray-600" />
-                <Label htmlFor="pickup" className="text-sm font-normal cursor-pointer">
+                      extra: !step2Data?.extra,
+                    });
+                  }
+                }}
+              >
+                <div
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full border shrink-0 transition-colors",
+                    step2Data?.extra
+                      ? "border-brand bg-brand text-white"
+                      : "border-border bg-transparent"
+                  )}
+                >
+                  {step2Data?.extra && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                </div>
+                <span className="text-sm font-medium">
                   需要到府牽車
-                </Label>
+                </span>
               </div>
             </div>
           </CardContent>

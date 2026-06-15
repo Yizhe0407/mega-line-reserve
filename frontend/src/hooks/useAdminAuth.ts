@@ -2,6 +2,7 @@ import useSWR from "swr";
 import liff from "@line/liff";
 import { ensureLiffInit } from "@/lib/liff";
 import { getMe } from "@/lib/api/endpoints/auth";
+import { AUTH_TOKEN_ERROR_MESSAGE } from "@/constants/errors";
 
 export function useAdminAuth() {
   const { data, error, isLoading } = useSWR(
@@ -16,7 +17,7 @@ export function useAdminAuth() {
 
       const token = liff.getIDToken();
       if (!token) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
 
       const me = await getMe(token);

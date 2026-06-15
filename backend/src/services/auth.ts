@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createHash } from 'crypto';
 import * as userModel from '../model/user';
 import { UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../types/user';
@@ -28,7 +29,8 @@ export const verifyLineToken = async (idToken: string): Promise<LineIdTokenVerif
     }
 
     // 嘗試從快取取得驗證結果
-    const cacheKey = `line-token:${idToken}`;
+    // 快取 key 使用 token 的 hash 而非明文，避免憑證以明文留存於記憶體
+    const cacheKey = `line-token:${createHash('sha256').update(idToken).digest('hex')}`;
     const cached = getCache<LineIdTokenVerifyResponse>(cacheKey);
     if (cached) {
         return cached;

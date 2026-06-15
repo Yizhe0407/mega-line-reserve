@@ -17,7 +17,7 @@ Mega Line Reserve 提供完整的預約解決方案，整合 LINE 訊息通知�
 本專案採用現代化的技術開發，確保系統的高效能與高擴展性：
 
 - **Frontend**: [Next.js](https://nextjs.org/) (React), Tailwind CSS, Shadcn UI
-- **Backend**: [Hono.js](https://hono.dev/) via Bun (採用 MVC + Repository 架構)
+- **Backend**: [Express](https://expressjs.com/) on Node.js (採用 MVC + Repository 架構)
 - **Database**: [MySQL](https://www.mysql.com/) (Managed by Prisma ORM)
 - **Containerization**: [Docker](https://www.docker.com/)
 
@@ -44,7 +44,7 @@ mega-line-reserve/
 │   │   ├── hooks/     # 自訂 React Hooks
 │   │   └── lib/       # 工具函式與 API 呼叫
 │   └── ...
-├── backend/            # Hono.js/Bun 後端 API 服務
+├── backend/            # Express 後端 API 服務 (Node.js)
 │   ├── src/
 │   │   ├── controllers/# 請求處理邏輯
 │   │   ├── services/  # 業務邏輯層
