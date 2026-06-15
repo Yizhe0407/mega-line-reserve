@@ -3,7 +3,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, User, History, Settings } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { useStepStore } from "@/store/step-store";
 
 const navItems = [
   { href: "/", label: "預約", icon: Calendar },
@@ -21,31 +20,25 @@ export default function Navigation() {
     : navItems;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 border-t bg-background">
-      <nav className="mx-auto flex max-w-md">
+    <div className="fixed inset-x-0 bottom-0 h-16 bg-background border-t border-border/70 z-30">
+      <nav className="mx-auto flex max-w-md h-full items-stretch">
         {items.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href === "/admin" && pathname.startsWith("/admin"));
           return (
             <Link
               key={href}
               href={href}
-              onClick={(e) => {
-                if (useStepStore.getState().isNewUser && href !== "/profile") {
-                  e.preventDefault();
-                  import("react-hot-toast").then((mod) => {
-                     mod.default.error("請先完成基本資料填寫");
-                  });
-                }
-              }}
-              className={`flex-1 flex flex-col items-center justify-center h-16 gap-0.5 sm:gap-1 text-[10px] sm:text-xs ${
-                active ? "text-primary" : "text-muted-foreground"
-              } ${useStepStore.getState().isNewUser && href !== "/profile" ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-1 transition-colors duration-200 active:opacity-60 ${
+                active ? "text-brand-strong" : "text-muted-foreground"
+              }`}
             >
-              <Icon className="h-5 w-5" />
-              <span>{label}</span>
+              <Icon size={22} strokeWidth={active ? 2 : 1.6} />
+              <span className={`text-[10px] tracking-[0.12em] transition-all ${active ? "font-semibold" : ""}`}>
+                {label}
+              </span>
               <span
-                className={`h-0.5 w-8 rounded-full transition-colors ${
-                  active ? "bg-primary" : "bg-transparent"
+                className={`absolute bottom-1.5 h-[2px] rounded-full bg-brand-strong transition-all duration-200 ${
+                  active ? "w-5 opacity-100" : "w-0 opacity-0"
                 }`}
               />
             </Link>

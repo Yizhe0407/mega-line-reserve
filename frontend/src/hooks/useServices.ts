@@ -8,6 +8,7 @@ import {
   updateService as updateServiceApi,
   deleteService as deleteServiceApi,
 } from "@/lib/api/endpoints/service";
+import { AUTH_TOKEN_ERROR_MESSAGE } from "@/constants/errors";
 import type { Service, CreateServiceDTO, UpdateServiceDTO } from "@/types";
 
 export function useServices(enabled = true) {
@@ -33,7 +34,7 @@ export function useServices(enabled = true) {
     async (data: CreateServiceDTO) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await createServiceApi(data, idToken);
       await mutate();
@@ -45,7 +46,7 @@ export function useServices(enabled = true) {
     async (id: number, data: UpdateServiceDTO) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await updateServiceApi(id, data, idToken);
       await mutate();
@@ -57,7 +58,7 @@ export function useServices(enabled = true) {
     async (id: number) => {
       const idToken = liff.getIDToken();
       if (!idToken) {
-        throw new Error("無法取得 ID token");
+        throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       }
       await deleteServiceApi(id, idToken);
       await mutate();

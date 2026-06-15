@@ -38,7 +38,7 @@ export function WeeklyCalendarView({
           return (
             <div
               key={index}
-              className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm"
+              className="bg-card rounded-xl overflow-hidden border border-border"
             >
               {/* Day Header */}
               <Button
@@ -79,13 +79,14 @@ export function WeeklyCalendarView({
                     className="p-2.5 h-auto w-auto hover:bg-muted rounded-xl transition-colors"
                     aria-label="複製時段"
                   >
-                    <Copy className="w-4 h-4 text-muted-foreground" />
+                    <Copy className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                   </Button>
                   <ChevronDown
                     className={cn(
                       "w-5 h-5 text-muted-foreground transition-transform duration-200",
                       expandedDay === index && "rotate-180"
                     )}
+                    strokeWidth={1.5}
                   />
                 </div>
               </Button>
@@ -130,7 +131,7 @@ export function WeeklyCalendarView({
                     onClick={() => onAddSlot(index)}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3.5 h-auto mt-2 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-foreground hover:text-foreground transition-all active:scale-[0.98] hover:bg-transparent"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" strokeWidth={1.75} />
                     <span className="text-sm font-medium">新增時段</span>
                   </Button>
                 </div>
@@ -176,7 +177,7 @@ export function WeeklyCalendarView({
               </div>
 
               {/* Time Slots Container */}
-              <div className="flex-1 bg-card rounded-2xl border border-border p-3 min-h-[420px] flex flex-col shadow-sm">
+              <div className="flex-1 bg-card rounded-xl border border-border p-3 min-h-[420px] flex flex-col">
                 <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[500px] scrollbar-thin pr-1">
                   {slots.map((slot) => (
                     <Button

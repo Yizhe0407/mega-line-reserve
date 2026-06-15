@@ -49,9 +49,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         next();
     } catch (error) {
         console.error('Authentication error:', error);
-        const errorMessage = error instanceof Error ? error.message : '認證過程發生錯誤';
-        const statusCode = errorMessage.includes('不存在') ? 401 : 500;
-        res.status(statusCode).json({ error: errorMessage });
+        next(error);
     }
 };
 

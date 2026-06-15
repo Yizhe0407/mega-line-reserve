@@ -17,6 +17,7 @@ import { useLiffMessage } from '@/hooks/useLiffMessage';
 import { format } from 'date-fns';
 import { useStepServices } from '@/hooks/useStepServices';
 import { getReserves, updateReserve, deleteReserve } from '@/lib/api/endpoints/reserve';
+import { AUTH_TOKEN_ERROR_MESSAGE } from '@/constants/errors';
 
 interface ReserveServiceItem {
   service: Service;
@@ -33,6 +34,7 @@ interface ReserveWithServices extends Reserve {
 interface ReservationCardProps {
   reserve: ReserveWithServices;
   onOpenDetail: (reserve: ReserveWithServices) => void;
+  isLast: boolean;
 }
 
 interface UpdateReservationMessageData {
@@ -64,20 +66,25 @@ const getReserveStatusKey = (reserve: ReserveWithServices, now: Date) => {
   return 'upcoming' as const;
 };
 
-const ReservationCard = memo(({ reserve, onOpenDetail }: ReservationCardProps) => {
+const ReservationCard = memo(({ reserve, onOpenDetail, isLast }: ReservationCardProps) => {
   const dayOfWeek = reserve.timeSlot?.dayOfWeek ?? 0;
   const startTime = reserve.timeSlot?.startTime ?? '00:00';
   const weekdayName = WEEKDAYS[dayOfWeek];
-  
+
   const now = new Date();
   const statusKey = getReserveStatusKey(reserve, now);
 
   const statusText = STATUS_LABELS[statusKey];
-  const statusClass = statusKey === 'upcoming'
-    ? 'bg-emerald-50 text-emerald-600'
+  const dotClass = statusKey === 'upcoming'
+    ? 'bg-success'
     : statusKey === 'cancelled'
-      ? 'border border-red-200 text-red-500 bg-transparent'
-      : 'bg-neutral-100 text-neutral-600';
+      ? 'bg-destructive'
+      : 'bg-muted-foreground/50';
+  const labelClass = statusKey === 'upcoming'
+    ? 'text-success-soft-foreground'
+    : statusKey === 'cancelled'
+      ? 'text-destructive'
+      : 'text-muted-foreground';
 
   const dateValue = reserve.date ? new Date(reserve.date) : new Date();
   const monthText = reserve.date ? format(dateValue, 'M月') : '—';
@@ -88,31 +95,40 @@ const ReservationCard = memo(({ reserve, onOpenDetail }: ReservationCardProps) =
     <button
       type="button"
       onClick={() => onOpenDetail(reserve)}
-      className="w-full text-left"
+      className={cn(
+        'group flex w-full items-stretch gap-4 px-4 py-4 text-left transition-colors hover:bg-secondary/40',
+        !isLast && 'border-b border-border'
+      )}
     >
-      <div className="flex items-center gap-4 rounded-3xl bg-white px-4 py-4 shadow-[0_6px_16px_rgba(15,15,15,0.04)] transition hover:-translate-y-0.5">
-        <div className="flex h-[58px] w-[58px] flex-col items-center justify-center rounded-2xl bg-neutral-900 text-white">
-          <span className="text-xs font-medium opacity-80">{monthText}</span>
-          <span className="text-xl font-semibold leading-none">{dayText}</span>
+      <div className="flex w-12 shrink-0 flex-col items-center justify-center leading-none">
+        <span className="text-[10px] font-medium tracking-wide text-muted-foreground">{monthText}</span>
+        <span className={cn('mt-2 text-[25px] font-semibold leading-none tabular-nums', statusKey === 'cancelled' && 'text-muted-foreground')}>
+          {dayText}
+        </span>
+      </div>
+      <div className="w-px self-stretch bg-border" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={cn('text-lg font-bold text-foreground', statusKey === 'cancelled' && 'line-through')}>{startTime}</span>
+          <span className="text-sm text-muted-foreground">{weekdayName}</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-neutral-900">{startTime}</span>
-            <span className="text-sm text-neutral-500">{weekdayName}</span>
-          </div>
-          <div className="mt-1 text-sm text-neutral-500 truncate">
-            {serviceNames || '未指定服務'}
-          </div>
-          <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
-            <span className={cn('rounded-full px-2.5 py-1 font-medium', statusClass)}>{statusText}</span>
-            <span className="flex items-center gap-1">
+        <div className="mt-1 truncate text-sm text-muted-foreground">
+          {serviceNames || '未指定服務'}
+        </div>
+        <div className="mt-2.5 flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1.5">
+            <span className={cn('h-1.5 w-1.5 rounded-full', dotClass)} />
+            <span className={labelClass}>{statusText}</span>
+          </span>
+          {reserve.isPickup && (
+            <span className="flex items-center gap-1 text-muted-foreground">
               <Car className="h-3.5 w-3.5" />
               到府牽車
             </span>
-          </div>
+          )}
         </div>
-        <ChevronRight className="h-5 w-5 text-neutral-300" />
       </div>
+      <ChevronRight className="h-[18px] w-[18px] self-center text-muted-foreground/30 transition-transform group-hover:translate-x-0.5" />
     </button>
   );
 });
@@ -143,7 +159,7 @@ export default function RecordPage() {
     ['reserves', userId ?? 'anonymous'],
     async () => {
       const idToken = liff.getIDToken();
-      if (!idToken) throw new Error('無法取得 ID token。');
+      if (!idToken) throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
 
       const data = (await getReserves(idToken, { mineOnly: true })) as ReserveWithServices[];
       return data;
@@ -171,7 +187,7 @@ export default function RecordPage() {
     setIsCancelling(true);
     try {
       const idToken = liff.getIDToken();
-      if (!idToken) throw new Error('無法取得 ID token。');
+      if (!idToken) throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
       
       await deleteReserve(cancelTarget.id, idToken);
 
@@ -192,7 +208,7 @@ export default function RecordPage() {
       setIsCancelDialogOpen(false);
       setCancelTarget(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : '發生未知錯誤。');
+      toast.error(err instanceof Error ? err.message : '發生未知錯誤。');
     } finally {
       setIsCancelling(false);
     }
@@ -211,7 +227,7 @@ export default function RecordPage() {
   ) => {
       try {
           const idToken = liff.getIDToken();
-          if (!idToken) throw new Error('無法取得 ID token');
+          if (!idToken) throw new Error(AUTH_TOKEN_ERROR_MESSAGE);
           
             await updateReserve(id, data, idToken);
 
@@ -251,10 +267,10 @@ export default function RecordPage() {
     const statusKey = getReserveStatusKey(detailReserve, now);
     const statusText = STATUS_LABELS[statusKey];
     const statusClass = statusKey === 'upcoming'
-      ? 'text-emerald-600'
+      ? 'text-success'
       : statusKey === 'cancelled'
-        ? 'text-red-500'
-        : 'text-neutral-500';
+        ? 'text-destructive'
+        : 'text-muted-foreground';
     return { statusKey, statusText, statusClass, now };
   }, [detailReserve]);
 
@@ -273,11 +289,11 @@ export default function RecordPage() {
     return (
       <div className="min-h-screen bg-background pb-24 px-5 pt-6">
         <div className="mx-auto max-w-md space-y-4">
-          <Skeleton className="h-6 w-24 rounded-full" />
-          <Skeleton className="h-28 w-full rounded-3xl" />
-          <Skeleton className="h-6 w-24 rounded-full" />
-          <Skeleton className="h-28 w-full rounded-3xl" />
-          <Skeleton className="h-28 w-full rounded-3xl" />
+          <Skeleton className="h-4 w-24 rounded-full" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-4 w-24 rounded-full" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
         </div>
       </div>
     );
@@ -301,8 +317,8 @@ export default function RecordPage() {
     <div className="min-h-screen bg-background pb-24 px-5 pt-6">
       <div className="mx-auto max-w-md">
       {reservations.length === 0 ? (
-        <div className="rounded-3xl bg-white px-6 py-16 text-center shadow-[0_6px_16px_rgba(15,15,15,0.04)]">
-          <p className="text-sm text-neutral-500">您目前沒有任何預約紀錄。</p>
+        <div className="rounded-2xl border border-border bg-card px-6 py-16 text-center">
+          <p className="text-sm text-muted-foreground">您目前沒有任何預約紀錄。</p>
           <Button asChild className="mt-6">
             <Link href="/">
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -311,16 +327,21 @@ export default function RecordPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-9">
           {upcomingReservations.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-neutral-600">即將到來</h2>
-              <div className="space-y-3">
-                {upcomingReservations.map((reserve) => (
+              <div className="flex items-center gap-3 px-1">
+                <h2 className="text-xs font-semibold tracking-[0.25em] text-muted-foreground">即將到來</h2>
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs tabular-nums text-muted-foreground/60">{upcomingReservations.length}</span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                {upcomingReservations.map((reserve, index) => (
                   <ReservationCard
                     key={reserve.id}
                     reserve={reserve}
                     onOpenDetail={handleOpenDetail}
+                    isLast={index === upcomingReservations.length - 1}
                   />
                 ))}
               </div>
@@ -328,13 +349,18 @@ export default function RecordPage() {
           )}
           {pastReservations.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-neutral-600">過去紀錄</h2>
-              <div className="space-y-3">
-                {pastReservations.map((reserve) => (
+              <div className="flex items-center gap-3 px-1">
+                <h2 className="text-xs font-semibold tracking-[0.25em] text-muted-foreground">過去紀錄</h2>
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs tabular-nums text-muted-foreground/60">{pastReservations.length}</span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                {pastReservations.map((reserve, index) => (
                   <ReservationCard
                     key={reserve.id}
                     reserve={reserve}
                     onOpenDetail={handleOpenDetail}
+                    isLast={index === pastReservations.length - 1}
                   />
                 ))}
               </div>
@@ -353,87 +379,84 @@ export default function RecordPage() {
       >
         {detailReserve && detailStatus && (
           <div className="space-y-5 py-2">
-            <div className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-              <span className={cn('flex items-center gap-2', detailStatus.statusClass)}>
-                <span className="h-2 w-2 rounded-full bg-current" />
-                {detailStatus.statusText}
-              </span>
+            <div className={cn('flex items-center gap-2 text-sm font-semibold', detailStatus.statusClass)}>
+              <span className="h-2 w-2 rounded-full bg-current" />
+              {detailStatus.statusText}
             </div>
 
-            <div className="flex items-center gap-4 rounded-2xl bg-neutral-50 px-4 py-3">
-              <div className="flex h-[56px] w-[56px] flex-col items-center justify-center rounded-2xl bg-neutral-900 text-white">
-                <span className="text-xs font-medium opacity-80">{detailMonthText}</span>
-                <span className="text-xl font-semibold leading-none">{detailDayText}</span>
+            <div className="flex items-stretch gap-4 border-b border-border pb-5">
+              <div className="flex w-12 shrink-0 flex-col items-center justify-center leading-none">
+                <span className="text-[10px] font-medium tracking-wide text-muted-foreground">{detailMonthText}</span>
+                <span className="mt-2 text-[25px] font-semibold leading-none tabular-nums">{detailDayText}</span>
               </div>
+              <div className="w-px self-stretch bg-border" />
               <div>
-                <div className="text-sm font-semibold text-neutral-900">
+                <div className="text-sm font-semibold text-foreground">
                   {detailDateValue ? format(detailDateValue, 'yyyy年M月d日') : '未指定日期'} {detailWeekday}
                 </div>
-                <div className="text-sm text-neutral-500">{detailTime}</div>
+                <div className="text-sm text-muted-foreground">{detailTime}</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-neutral-700">預約項目</div>
+              <div className="text-sm font-semibold text-foreground">預約項目</div>
               <div className="flex flex-wrap gap-2">
                 {detailServiceNames.length > 0 ? (
                   detailServiceNames.map((name) => (
-                    <span key={name} className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-600">
+                    <span key={name} className="rounded-lg border border-border bg-transparent px-2.5 py-1 text-xs text-secondary-foreground">
                       {name}
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-neutral-400">未指定服務</span>
+                  <span className="text-sm text-muted-foreground/60">未指定服務</span>
                 )}
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between text-sm text-neutral-600">
+            <div className="divide-y divide-border pt-1">
+              <div className="flex items-center justify-between py-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-neutral-400" />
+                  <User className="h-4 w-4" />
                   姓名
                 </span>
-                <span className="font-semibold text-neutral-900">{detailReserve.user?.name || step1Data.name}</span>
+                <span className="font-semibold text-foreground">{detailReserve.user?.name || step1Data.name}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-neutral-600">
+              <div className="flex items-center justify-between py-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-neutral-400" />
+                  <Phone className="h-4 w-4" />
                   手機號碼
                 </span>
-                <span className="font-semibold text-neutral-900">{detailReserve.user?.phone || step1Data.phone}</span>
+                <span className="font-semibold text-foreground">{detailReserve.user?.phone || step1Data.phone}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-neutral-600">
+              <div className="flex items-center justify-between py-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
-                  <Car className="h-4 w-4 text-neutral-400" />
+                  <Car className="h-4 w-4" />
                   車牌號碼
                 </span>
-                <span className="font-semibold text-neutral-900">{detailReserve.license}</span>
+                <span className="font-semibold text-foreground">{detailReserve.license}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-neutral-600">
+              <div className="flex items-center justify-between py-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
-                  <Car className="h-4 w-4 text-neutral-400" />
+                  <Car className="h-4 w-4" />
                   到府牽車
                 </span>
-                <span className="font-semibold text-neutral-900">{detailReserve.isPickup ? '是' : '否'}</span>
+                <span className="font-semibold text-foreground">{detailReserve.isPickup ? '是' : '否'}</span>
               </div>
             </div>
 
             {detailStatus.statusKey === 'upcoming' && detailReserve.status === 'PENDING' && (
-              <div className="flex gap-2 sm:gap-3 pt-2">
-                <Button variant="outline" className="flex-1 px-2 sm:px-4" onClick={() => handleEditClick(detailReserve)}>
-                  <Pencil className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">修改預約</span>
-                  <span className="sm:hidden">修改</span>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleEditClick(detailReserve)}>
+                  <Pencil className="h-4 w-4" />
+                  修改預約
                 </Button>
                 <Button
                   variant="ghost"
-                  className="flex-1 px-2 sm:px-4 text-red-500 hover:text-red-600"
+                  className="flex-1 text-destructive hover:text-destructive"
                   onClick={() => handleCancelClick(detailReserve)}
                 >
-                  <Trash2 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">取消預約</span>
-                  <span className="sm:hidden">取消</span>
+                  <Trash2 className="h-4 w-4" />
+                  取消預約
                 </Button>
               </div>
             )}

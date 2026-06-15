@@ -9,10 +9,17 @@ async function main() {
   const now = new Date();
   console.log(`Current Time: ${now.toLocaleString()}`);
 
+  // 只可能「已過去」的預約才需要檢查（今天或更早），未來日期不可能已完成
+  // 在 DB 層先過濾掉未來日期的預約，避免隨資料量增長而全表掃描
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
   const activeReservations = await prisma.reserve.findMany({
     where: {
       status: {
         in: [ReserveStatus.PENDING, ReserveStatus.CONFIRMED]
+      },
+      date: {
+        lte: today
       }
     },
     include: {

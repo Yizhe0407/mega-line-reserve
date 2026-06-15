@@ -3,7 +3,9 @@ import * as timeSlotModel from "../model/timeSlot";
 import * as serviceModel from "../model/service";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
 import { ValidationError, NotFoundError } from "../types/errors";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
+import { prisma } from "../config/database";
+import { isValidLicense, normalizeLicense } from "../utils/validators";
 
 const validateServiceIds = async (serviceIds: number[]) => {
     if (!serviceIds || serviceIds.length === 0) {
@@ -19,15 +21,21 @@ const validateServiceIds = async (serviceIds: number[]) => {
     return uniqueIds;
 };
 
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+
 // 取得預約列表 (根據權限範圍)
+// 管理端列表採分頁；一般使用者只回自己的預約（單人資料量有限，不分頁以利前端區分即將/歷史）
 export const getReserves = async (
     user: { id: number, role: UserRole },
-    options?: { mineOnly?: boolean }
+    options?: { mineOnly?: boolean; page?: number; pageSize?: number }
 ) => {
     const mineOnly = options?.mineOnly ?? false;
 
     if (user.role === UserRole.ADMIN && !mineOnly) {
-        return reserveModel.getAllReserves();
+        const page = Math.max(1, Math.trunc(options?.page ?? 1));
+        const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(options?.pageSize ?? DEFAULT_PAGE_SIZE)));
+        return reserveModel.getAllReserves({ skip: (page - 1) * pageSize, take: pageSize });
     }
     return reserveModel.getReservesByUserId(user.id);
 };
@@ -67,10 +75,16 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
         throw new ValidationError("請提供車牌號碼");
     }
 
-    const [timeSlot, validServiceIds, reserveCount] = await Promise.all([
+    // 驗證並正規化車牌格式（與 user 更新端一致），避免 API 直打塞入髒資料
+    const normalizedLicense = normalizeLicense(data.license);
+    if (!isValidLicense(normalizedLicense)) {
+        throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");
+    }
+    data.license = normalizedLicense;
+
+    const [timeSlot, validServiceIds] = await Promise.all([
         timeSlotModel.getTimeSlotById(data.timeSlotId),
         validateServiceIds(data.serviceIds),
-        reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date),
     ]);
 
     if (!timeSlot || !timeSlot.isActive) {
@@ -78,15 +92,21 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
     }
 
     const capacity = timeSlot.capacity ?? 1;
-    if (reserveCount >= capacity) {
-        throw new ValidationError("此時段已額滿");
-    }
 
     // 2. 建立預約
-    return reserveModel.createReserve(userId, {
-        ...data,
-        serviceIds: validServiceIds
-    });
+    // 容量檢查與寫入需在同一個交易內以 Serializable 隔離層級執行，
+    // 避免並發請求同時通過容量檢查導致超賣
+    return prisma.$transaction(async (tx) => {
+        const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(data.timeSlotId, data.date, tx);
+        if (reserveCount >= capacity) {
+            throw new ValidationError("此時段已額滿");
+        }
+
+        return reserveModel.createReserve(userId, {
+            ...data,
+            serviceIds: validServiceIds
+        }, tx);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 };
 
 // 更新預約 (管理員變更狀態或備註)
@@ -127,9 +147,13 @@ export const updateReserve = async (
         ? validateServiceIds(updatePayload.serviceIds)
         : undefined;
 
+    if (validateServiceIdsPromise) {
+        updatePayload.serviceIds = await validateServiceIdsPromise;
+    }
+
     // 檢查日期或時段是否變更
     const isTimeChanged = updatePayload.timeSlotId || updatePayload.date;
-    
+
     if (isTimeChanged) {
         const newTimeSlotId = updatePayload.timeSlotId ?? existingReserve.timeSlotId;
         const newDateStr = updatePayload.date ?? existingReserve.date.toISOString().split('T')[0];
@@ -148,20 +172,24 @@ export const updateReserve = async (
             (updatePayload.date && new Date(updatePayload.date).getTime() !== existingDateTime);
 
         if (isTimeActuallyChanged) {
-            const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(
-                newTimeSlotId,
-                newDateStr
-            );
             const capacity = timeSlot.capacity ?? 1;
 
-            if (reserveCount >= capacity) {
-                throw new ValidationError("該時段已額滿");
-            }
-        }
-    }
+            // 容量檢查與寫入需在同一個交易內以 Serializable 隔離層級執行，
+            // 避免並發請求同時通過容量檢查導致超賣
+            return prisma.$transaction(async (tx) => {
+                const reserveCount = await reserveModel.countActiveReservesByTimeSlotAndDate(
+                    newTimeSlotId,
+                    newDateStr,
+                    tx
+                );
 
-    if (validateServiceIdsPromise) {
-        updatePayload.serviceIds = await validateServiceIdsPromise;
+                if (reserveCount >= capacity) {
+                    throw new ValidationError("該時段已額滿");
+                }
+
+                return reserveModel.updateReserve(id, updatePayload, tx);
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        }
     }
 
     return reserveModel.updateReserve(id, updatePayload);

@@ -68,6 +68,12 @@ export const createUser = async (userData: CreateUserDTO) => {
     return await userModel.createUser(userData);
 };
 
+// 使用者可自行更新的欄位白名單
+// 注意：role、lineId、id、createdAt、updatedAt 不可由使用者修改，避免權限提升
+const UPDATABLE_FIELDS = ['name', 'pictureUrl', 'phone', 'license'] as const;
+type UpdatableField = typeof UPDATABLE_FIELDS[number];
+type UpdatableUserData = Partial<Pick<UserProfile, UpdatableField>>;
+
 export const updateUser = async (idParam: string | string[], data: Partial<UserProfile>, currentUserId: number) => {
     const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
 
@@ -87,37 +93,37 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
         throw new NotFoundError(`找不到 ID 為 ${id} 的使用者`);
     }
 
+    // 安全性：只允許白名單內的欄位被更新，避免使用者透過此 API 變更 role、lineId 等敏感欄位
+    const updateData: UpdatableUserData = {};
+    for (const field of UPDATABLE_FIELDS) {
+        if (data[field] !== undefined) {
+            updateData[field] = data[field] as any;
+        }
+    }
+
     // 業務邏輯檢查：驗證更新資料不為空
-    if (!data || Object.keys(data).length === 0) {
+    if (Object.keys(updateData).length === 0) {
         throw new ValidationError("更新資料不能為空");
     }
 
     // 業務邏輯檢查：驗證電話號碼格式（如果有更新）
-    if (data.phone) {
+    if (updateData.phone) {
         const phoneRegex = /^09\d{8}$/;
-        if (!phoneRegex.test(data.phone)) {
+        if (!phoneRegex.test(updateData.phone)) {
             throw new ValidationError("電話號碼格式不正確，應為 09 開頭的 10 位數字");
         }
     }
 
     // 業務邏輯檢查：驗證車牌格式（如果有更新）
-    if (data.license) {
-        const normalizedLicense = normalizeLicense(data.license);
+    if (updateData.license) {
+        const normalizedLicense = normalizeLicense(updateData.license);
         if (!isValidLicense(normalizedLicense)) {
             throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");
         }
-        data.license = normalizedLicense;
+        updateData.license = normalizedLicense;
     }
 
-    // 業務邏輯檢查：如果更新 Line ID，確認不重複
-    if (data.lineId && data.lineId !== existingUser.lineId) {
-        const duplicateUser = await userModel.findUserByLineId(data.lineId);
-        if (duplicateUser) {
-            throw new ValidationError(`Line ID ${data.lineId} 已被使用`);
-        }
-    }
-
-    return await userModel.updateUser(id, data);
+    return await userModel.updateUser(id, updateData);
 };
 
 export const deleteUser = async (idParam: string | string[]) => {

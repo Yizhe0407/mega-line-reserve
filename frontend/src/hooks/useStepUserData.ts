@@ -7,8 +7,7 @@ import { login } from '@/lib/api/endpoints/auth';
 import { ensureLiffInit } from '@/lib/liff';
 import { useStepStore } from '@/store/step-store';
 import { FetchError } from '@/lib/api/core/fetch-wrapper';
-
-type RouterLike = { push: (url: string) => void } | null | undefined;
+import { AUTH_TOKEN_ERROR_MESSAGE } from '@/constants/errors';
 
 export function useStepUserData() {
   const setIsLoading = useStepStore((state) => state.setIsLoading);
@@ -16,8 +15,9 @@ export function useStepUserData() {
   const setLineId = useStepStore((state) => state.setLineId);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
   const setIsNewUser = useStepStore((state) => state.setIsNewUser);
+  const setSavedProfile = useStepStore((state) => state.setSavedProfile);
 
-  const fetchUserData = useCallback(async (router?: RouterLike) => {
+  const fetchUserData = useCallback(async () => {
     // 防止重複執行
     if (useStepStore.getState().isLoading) {
       return;
@@ -41,7 +41,7 @@ export function useStepUserData() {
 
       const idToken = liff.getIDToken();
       if (!idToken) {
-        toast.error('無法取得 ID token');
+        toast.error(AUTH_TOKEN_ERROR_MESSAGE);
         return;
       }
 
@@ -54,21 +54,6 @@ export function useStepUserData() {
       const lineId = lineProfile.userId;
       setLineId(lineId);
       setUserId(response.user.id);
-
-      if (!response.user.phone || !response.user.license) {
-        setIsNewUser(true);
-        setStep1Data({
-          pictureUrl: lineProfile.pictureUrl,
-          name: response.user.name || '',
-          phone: response.user.phone || '',
-          license: response.user.license || '',
-        });
-        if (router) {
-          router.push('/profile?new=true');
-        }
-        return;
-      }
-
       setIsNewUser(false);
 
       setStep1Data({
@@ -77,32 +62,40 @@ export function useStepUserData() {
         phone: response.user.phone || '',
         license: response.user.license || '',
       });
+
+      // 記錄伺服端原始資料，供送出時判斷是否真有變動
+      setSavedProfile({
+        phone: response.user.phone || '',
+        license: response.user.license || '',
+      });
     } catch (error) {
       const isRecord = (value: unknown): value is Record<string, unknown> =>
         typeof value === 'object' && value !== null;
 
-      // 處理新用戶錯誤
+      // 處理新用戶錯誤：尚未建立帳號，留在預約流程內讓使用者填寫基本資料，
+      // 待第一次預約送出時才一併建立帳號（不再強制跳轉至個人資料頁）
       if (error instanceof FetchError && isRecord(error.data) && error.data.isNewUser) {
         setIsNewUser(true);
+        setUserId(null);
         const lineProfile = isRecord(error.data.lineProfile) ? error.data.lineProfile : undefined;
+        if (typeof lineProfile?.lineId === 'string') {
+          setLineId(lineProfile.lineId);
+        }
         setStep1Data({
           pictureUrl: typeof lineProfile?.pictureUrl === 'string' ? lineProfile.pictureUrl : '',
           name: typeof lineProfile?.displayName === 'string' ? lineProfile.displayName : '',
           phone: '',
           license: '',
         });
-        if (router) {
-          router.push('/profile?new=true');
-        }
         return;
       }
-      
+
       console.error('LIFF/Profile process failed:', error);
       toast.error('初始化或讀取資料時發生錯誤');
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setUserId, setLineId, setStep1Data, setIsNewUser]);
+  }, [setIsLoading, setUserId, setLineId, setStep1Data, setIsNewUser, setSavedProfile]);
 
   return { fetchUserData };
 }

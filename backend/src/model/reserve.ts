@@ -1,10 +1,15 @@
-import { ReserveStatus } from "@prisma/client";
+import { Prisma, ReserveStatus } from "@prisma/client";
 import { prisma } from "../config/database";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
 
-// 取得所有預約 (管理端)
-export const getAllReserves = () => {
+// 可傳入 prisma 或 transaction client，讓呼叫端可在交易中執行以避免競態
+type DbClient = Prisma.TransactionClient;
+
+// 取得所有預約 (管理端，分頁避免資料量成長後 unbounded 查詢)
+export const getAllReserves = ({ skip, take }: { skip?: number; take?: number } = {}) => {
     return prisma.reserve.findMany({
+        skip,
+        take,
         include: {
             user: true,
             timeSlot: true,
@@ -69,10 +74,10 @@ export const getReserveById = (id: number) => {
 };
 
 // 建立預約
-export const createReserve = (userId: number, data: CreateReserveDTO) => {
+export const createReserve = (userId: number, data: CreateReserveDTO, db: DbClient = prisma) => {
     const { timeSlotId, license, serviceIds, userMemo, date, isPickup } = data;
-    
-    return prisma.reserve.create({
+
+    return db.reserve.create({
         data: {
             userId,
             timeSlotId,
@@ -100,22 +105,24 @@ export const createReserve = (userId: number, data: CreateReserveDTO) => {
 };
 
 // 更新預約 (狀態或管理端備註)
-export const updateReserve = (id: number, data: UpdateReserveDTO) => {
+export const updateReserve = (id: number, data: UpdateReserveDTO, db: DbClient = prisma) => {
     const { status, adminMemo, license, timeSlotId, date, userMemo, serviceIds, isPickup } = data;
-    
+
     // 準備更新資料物件
-    const updateData: any = {
+    const updateData: Prisma.ReserveUpdateInput = {
         status,
         adminMemo,
-        timeSlotId,
         license,
-        userMemo
+        userMemo,
+        ...(timeSlotId !== undefined && {
+            timeSlot: { connect: { id: timeSlotId } }
+        })
     };
 
     if (date) {
         updateData.date = new Date(date);
     }
-    
+
     if (isPickup !== undefined) {
         updateData.isPickup = isPickup;
     }
@@ -132,7 +139,7 @@ export const updateReserve = (id: number, data: UpdateReserveDTO) => {
         };
     }
 
-    return prisma.reserve.update({
+    return db.reserve.update({
         where: { id },
         data: updateData, // 使用動態構建的 data 物件
         include: { // 確保回傳資料包含關聯
@@ -153,9 +160,9 @@ export const deleteReserve = (id: number) => {
     });
 };
 
-export const countActiveReservesByTimeSlotAndDate = (timeSlotId: number, date: string) => {
+export const countActiveReservesByTimeSlotAndDate = (timeSlotId: number, date: string, db: DbClient = prisma) => {
     const targetDate = new Date(date);
-    return prisma.reserve.count({
+    return db.reserve.count({
         where: {
             timeSlotId,
             date: targetDate,

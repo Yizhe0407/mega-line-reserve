@@ -11,6 +11,8 @@ interface StepStore {
   isLoading: boolean;
   isNewUser: boolean;
   services: Service[];
+  // 既有用戶載入時的伺服端基本資料，用於判斷是否真有變動而需呼叫 updateUser
+  savedProfile: { phone?: string; license?: string } | null;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -22,6 +24,7 @@ interface StepStore {
   setLineId: (lineId: string) => void;
   setIsLoading: (loading: boolean) => void;
   setIsNewUser: (isNew: boolean) => void;
+  setSavedProfile: (profile: { phone?: string; license?: string } | null) => void;
   reset: () => void;
 }
 
@@ -35,6 +38,7 @@ export const useStepStore = create<StepStore>((set, get) => ({
   isLoading: false,
   isNewUser: false,
   services: [],
+  savedProfile: null,
 
 
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -67,6 +71,8 @@ export const useStepStore = create<StepStore>((set, get) => ({
   setIsLoading: (loading) => set({ isLoading: loading }),
 
   setIsNewUser: (isNew) => set({ isNewUser: isNew }),
+
+  setSavedProfile: (profile) => set({ savedProfile: profile }),
 
   reset: () =>
     set({

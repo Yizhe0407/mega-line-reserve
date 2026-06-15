@@ -5,9 +5,10 @@
   "main": "index.ts",
   "scripts": {
     "dev": "prisma generate && nodemon --exec ts-node src/index.ts",
-    "start": "ts-node src/index.ts",
+    "start": "node dist/src/index.js",
     "build": "tsc",
-    "cron:complete": "ts-node scripts/auto-complete.ts",
+    "cron:complete": "node dist/scripts/auto-complete.js",
+    "cron:complete:dev": "ts-node scripts/auto-complete.ts",
     "seed": "ts-node prisma/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,8 +20,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.26.0",
   "devDependencies": {
-    "@types/cors": "^2.8.19",
     "@types/compression": "^1.7.6",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.9",
     "@types/nodemailer": "^7.0.5",
@@ -31,11 +32,13 @@
   },
   "dependencies": {
     "@prisma/client": "^6.11.0",
-    "axios": "^1.13.2",
+    "axios": "^1.18.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
     "nodemailer": "^7.0.12"
   }
 }

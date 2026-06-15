@@ -10,7 +10,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      # 僅綁定 localhost，避免資料庫直接暴露在公網
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -32,14 +33,15 @@ services:
       PMA_USER: root
       PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "8080:80"
+      # 僅綁定 localhost，避免管理介面暴露在公網（需透過 SSH tunnel 存取）
+      - "127.0.0.1:8080:80"
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - mega-network
 
-  # Backend (Hono.js with Bun)
+  # Backend (Express on Node.js)
   backend:
     build:
       context: ./backend
@@ -50,7 +52,7 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       NODE_ENV: production
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN}
       LINE_CHANNEL_ID: ${LINE_CHANNEL_ID}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
     ports:
