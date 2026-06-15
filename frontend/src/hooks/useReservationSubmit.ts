@@ -56,6 +56,7 @@ export function useReservationSubmit() {
           );
           setUserId(created.user.id);
           setIsNewUser(false);
+          setSavedProfile({ phone: step1Data.phone, license: step1Data.license });
           return;
         }
 

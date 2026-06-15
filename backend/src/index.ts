@@ -19,9 +19,13 @@ const PORT = process.env.PORT || 3001;
 // 信任反向代理：production 多半在 nginx / Cloud Run / LB 後面，
 // 未設定時 express 會以代理 IP 作為 req.ip，導致 rate limit 全站共用同一桶且失效。
 // 以 TRUST_PROXY 指定信任的代理層數（預設 production 1 層、開發環境關閉）。
-const trustProxy = process.env.TRUST_PROXY
-    ? Number(process.env.TRUST_PROXY)
-    : process.env.NODE_ENV === 'production' ? 1 : false;
+const trustProxy = (() => {
+    if (process.env.TRUST_PROXY) {
+        const parsed = Number(process.env.TRUST_PROXY);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return process.env.NODE_ENV === 'production' ? 1 : false;
+})();
 app.set('trust proxy', trustProxy);
 
 // CORS 設定
