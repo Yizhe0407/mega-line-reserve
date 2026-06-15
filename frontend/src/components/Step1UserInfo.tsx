@@ -50,7 +50,7 @@ export default function Step1UserInfo() {
                 name="phone"
                 type="tel"
                 autoComplete="tel"
-                placeholder={isLoading ? "正在獲獲中…" : "請輸入您的手機號碼"}
+                placeholder={isLoading ? "正在獲取中…" : "請輸入您的手機號碼"}
                 className={`h-12 ${phoneError ? "ring-2 ring-destructive" : ""}`}
                 value={phone}
                 onChange={(e) => setStep1Data({ phone: e.target.value })}

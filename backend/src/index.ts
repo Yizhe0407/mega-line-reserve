@@ -63,10 +63,10 @@ const globalLimiter = rateLimit({
 
 // Middleware
 app.use(cors(corsOptions));
+app.use(globalLimiter);
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(globalLimiter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

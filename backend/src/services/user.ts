@@ -107,7 +107,7 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
     }
 
     // 業務邏輯檢查：驗證電話號碼格式（如果有更新）
-    if (updateData.phone) {
+    if (updateData.phone !== undefined) {
         const phoneRegex = /^09\d{8}$/;
         if (!phoneRegex.test(updateData.phone)) {
             throw new ValidationError("電話號碼格式不正確，應為 09 開頭的 10 位數字");
