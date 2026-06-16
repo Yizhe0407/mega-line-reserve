@@ -47,7 +47,7 @@ export default function Step3DateTime() {
       <div className="px-4 pt-24">
         <Card className="shadow-none border-none gap-4">
           <CardContent className="space-y-6">
-            <div className="rounded-2xl border border-border bg-secondary/50 p-2">
+            <div className="rounded-2xl border border-border bg-secondary/50 p-2 pb-3 overflow-visible">
               <Calendar
                 mode="single"
                 locale={zhTW}

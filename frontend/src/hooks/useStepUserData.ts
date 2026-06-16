@@ -91,7 +91,7 @@ export function useStepUserData() {
       }
 
       console.error('LIFF/Profile process failed:', error);
-      toast.error('初始化或讀取資料時發生錯誤');
+      toast.error('讀取資料失敗，請重新整理頁面再試');
     } finally {
       setIsLoading(false);
     }

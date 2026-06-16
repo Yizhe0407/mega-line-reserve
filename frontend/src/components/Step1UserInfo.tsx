@@ -1,9 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useStepStore } from "@/store/step-store";
-import { useStepUserData } from "@/hooks/useStepUserData";
 import { isValidPhone, isValidLicense } from "@/lib/validators";
 import StepButtonGroup from "./StepButtonGroup";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,8 +11,6 @@ export default function Step1UserInfo() {
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
   const isLoading = useStepStore((state) => state.isLoading);
-  const { fetchUserData } = useStepUserData();
-
   const phone = step1Data?.phone || "";
   const license = step1Data?.license || "";
   const phoneError = phone !== "" && !isValidPhone(phone);
@@ -25,13 +21,6 @@ export default function Step1UserInfo() {
       <div className="px-4 pt-24">
         <Card className="shadow-none border-none gap-4">
           <CardContent className="space-y-6">
-            <Button
-              onClick={() => fetchUserData()}
-              className="w-full h-12"
-              disabled={isLoading}
-            >
-              自動填入
-            </Button>
             {/* 載入提示 */}
             {isLoading && (
               <Alert className="mb-6">
