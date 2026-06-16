@@ -107,6 +107,13 @@
   }
 }
 
+/* react-day-picker：修正 LINE WebKit 中 table 高度不含 flex <tr> margin 的問題 */
+[data-slot="calendar"] table thead,
+[data-slot="calendar"] table tbody {
+  display: block;
+  width: 100%;
+}
+
 /* 響應式安全樣式 */
 @layer utilities {
   /* 防止長文字溢出容器 */
