@@ -1,12 +1,8 @@
 // 與後端 backend/src/utils/validators.ts 保持一致，供前端提前驗證避免送出失敗
-// 台灣現行車牌格式（含七代殘留、八代、八代二式一車一號）：
-// 2英+3或4數、3英+2或3或4數、4數+2英、2數+3英
-const LICENSE_PATTERNS = [
-  /^[A-Z]{2}-?\d{3,4}$/,
-  /^[A-Z]{3}-?\d{2,4}$/,
-  /^\d{4}-?[A-Z]{2}$/,
-  /^\d{2}-?[A-Z]{3}$/,
-];
+// 台灣車牌格式很多（身障、外交、軍用、電動、拖車等），官方無完整清單，
+// 嚴格白名單一定會漏漏誤擋合法客戶車牌，改用寬鬆 sanity check：
+// 僅英數字加最多一個連字號、英數字部分 5-8 碼、至少各含一個英文字母與數字
+const LICENSE_FORMAT = /^[A-Z0-9]+-?[A-Z0-9]+$/;
 
 const PHONE_PATTERN = /^09\d{8}$/;
 
@@ -15,5 +11,11 @@ export const isValidPhone = (phone: string): boolean => {
 };
 
 export const isValidLicense = (license: string): boolean => {
-  return LICENSE_PATTERNS.some((pattern) => pattern.test(license.trim().toUpperCase()));
+  const normalized = license.trim().toUpperCase();
+  if (!LICENSE_FORMAT.test(normalized)) return false;
+
+  const alnum = normalized.replace("-", "");
+  if (alnum.length < 5 || alnum.length > 8) return false;
+
+  return /[A-Z]/.test(alnum) && /[0-9]/.test(alnum);
 };

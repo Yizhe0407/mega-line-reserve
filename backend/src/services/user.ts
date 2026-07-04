@@ -54,7 +54,7 @@ export const createUser = async (userData: CreateUserDTO) => {
     if (userData.license) {
         const normalizedLicense = normalizeLicense(userData.license);
         if (!isValidLicense(normalizedLicense)) {
-            throw new ValidationError("車牌格式不正確，應為 2-3 個英文字母加 2-4 位數字（例如：ABC-1234），或舊式 1234-AA、12-ABC");
+            throw new ValidationError("車牌格式不正確，須為英數字組合（5-8碼，至少各含1個英文字母與數字），例如：ABC-1234");
         }
         userData.license = normalizedLicense;
     }
@@ -118,7 +118,7 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
     if (updateData.license !== undefined && updateData.license !== null) {
         const normalizedLicense = normalizeLicense(updateData.license);
         if (!isValidLicense(normalizedLicense)) {
-            throw new ValidationError("車牌格式不正確，應為 2-3 個英文字母加 2-4 位數字（例如：ABC-1234），或舊式 1234-AA、12-ABC");
+            throw new ValidationError("車牌格式不正確，須為英數字組合（5-8碼，至少各含1個英文字母與數字），例如：ABC-1234");
         }
         updateData.license = normalizedLicense;
     }
