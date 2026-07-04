@@ -78,7 +78,7 @@ export const createReserve = async (userId: number, data: CreateReserveDTO) => {
     // 驗證並正規化車牌格式（與 user 更新端一致），避免 API 直打塞入髒資料
     const normalizedLicense = normalizeLicense(data.license);
     if (!isValidLicense(normalizedLicense)) {
-        throw new ValidationError("車牌格式不正確，應為 2-4 個英文字母加 4 位數字（例如：ABC-1234），或舊式 1234-AA");
+        throw new ValidationError("車牌格式不正確，應為 2-3 個英文字母加 2-4 位數字（例如：ABC-1234），或舊式 1234-AA、12-ABC");
     }
     data.license = normalizedLicense;
 
