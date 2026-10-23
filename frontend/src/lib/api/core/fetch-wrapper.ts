@@ -1,6 +1,60 @@
-import { ApiError } from '@/types/common';
+import type { ApiError } from '@/types/common';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? '')
+  .trim()
+  .replace(/\/+$/, '');
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
+
+function buildRequestUrl(endpoint: string): string {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${API_URL}${normalizedEndpoint}`;
+}
+
+interface RequestAbortContext {
+  signal: AbortSignal;
+  didTimeout: () => boolean;
+  cleanup: () => void;
+}
+
+function createRequestAbortContext(
+  callerSignal: AbortSignal | null | undefined,
+  timeoutMs: number
+): RequestAbortContext {
+  const controller = new AbortController();
+  const effectiveTimeoutMs =
+    Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? timeoutMs
+      : DEFAULT_REQUEST_TIMEOUT_MS;
+  let timedOut = false;
+
+  const abortFromCaller = () => {
+    if (!controller.signal.aborted) {
+      controller.abort(callerSignal?.reason);
+    }
+  };
+
+  if (callerSignal?.aborted) {
+    abortFromCaller();
+  } else {
+    callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  }
+
+  const timeoutId = setTimeout(() => {
+    if (!controller.signal.aborted) {
+      timedOut = true;
+      controller.abort();
+    }
+  }, effectiveTimeoutMs);
+
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    cleanup: () => {
+      clearTimeout(timeoutId);
+      callerSignal?.removeEventListener('abort', abortFromCaller);
+    },
+  };
+}
 
 export class FetchError<T = unknown> extends Error {
   public data?: T; // 保留完整的錯誤資料
@@ -14,6 +68,12 @@ export class FetchError<T = unknown> extends Error {
 
 interface FetchOptions extends RequestInit {
   token?: string;
+  timeoutMs?: number;
+}
+
+export interface RequestControlOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
 }
 
 /**
@@ -23,10 +83,21 @@ async function fetchWrapper<T>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const { token, headers, ...restOptions } = options;
+  const {
+    token,
+    headers,
+    signal: callerSignal,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    ...restOptions
+  } = options;
+  const requestAbortContext = createRequestAbortContext(
+    callerSignal,
+    timeoutMs
+  );
 
   const config: RequestInit = {
     ...restOptions,
+    signal: requestAbortContext.signal,
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -34,60 +105,82 @@ async function fetchWrapper<T>(
     },
   };
 
-  let response: Response;
+  const requestUrl = buildRequestUrl(endpoint);
+
   try {
-    response = await fetch(`${API_URL}${endpoint}`, config);
-  } catch (err) {
-    console.error('網路請求失敗:', err);
-    throw new FetchError(0, '網路連線失敗，請稍後再試', {
-      url: `${API_URL}${endpoint}`,
-    });
-  }
+    const response = await fetch(requestUrl, config);
 
-  // 處理錯誤回應
-  if (!response.ok) {
-    const contentType = response.headers.get('content-type') || '';
-    let errorData: ApiError = { error: '伺服器發生錯誤，請稍後再試' };
+    // 處理錯誤回應
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      let errorData: ApiError = { error: '伺服器發生錯誤，請稍後再試' };
 
-    try {
       if (contentType.includes('application/json')) {
-        errorData = (await response.json()) as ApiError;
+        try {
+          errorData = (await response.json()) as ApiError;
+        } catch {
+          errorData = { error: '伺服器發生錯誤，請稍後再試' };
+        }
       } else {
-        // 非 JSON 回應（例如代理伺服器或框架產生的錯誤頁面）
-        // 內容可能包含技術細節，僅記錄於 console，不直接顯示給使用者
-        const text = await response.text();
-        console.error('非預期的錯誤回應內容:', text);
+        // 不讀取或輸出代理錯誤頁內容，避免技術細節出現在瀏覽器 console。
         errorData = { error: '伺服器發生錯誤，請稍後再試' };
       }
-    } catch {
-      errorData = { error: '伺服器發生錯誤，請稍後再試' };
-    }
 
-    const message = errorData.error || `伺服器發生錯誤，請稍後再試`;
+      const message = errorData.error || '伺服器發生錯誤，請稍後再試';
 
-    // 如果是 401 Unauthorized，發送全域事件通知前端登出
-    if (response.status === 401) {
-      if (typeof window !== 'undefined') {
+      // 如果是 401 Unauthorized，發送全域事件通知前端登出
+      if (response.status === 401 && typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth:unauthorized'));
       }
+
+      throw new FetchError(response.status, message, {
+        ...errorData,
+        status: response.status,
+        statusText: response.statusText,
+        url: requestUrl,
+      });
     }
 
-    throw new FetchError(response.status, message, {
-      ...errorData,
-      status: response.status,
-      statusText: response.statusText,
-      url: `${API_URL}${endpoint}`,
-    });
-  }
+    return (await response.json()) as T;
+  } catch (err) {
+    if (err instanceof FetchError) {
+      throw err;
+    }
 
-  return response.json();
+    if (requestAbortContext.didTimeout()) {
+      throw new FetchError(408, '請求逾時，請稍後再試', {
+        url: requestUrl,
+        timeoutMs,
+      });
+    }
+
+    // 呼叫端主動取消時保留原始 AbortError，避免誤判為網路故障。
+    if (callerSignal?.aborted) {
+      throw err;
+    }
+
+    console.error('網路請求失敗');
+    throw new FetchError(0, '網路連線失敗，請稍後再試', {
+      url: requestUrl,
+    });
+  } finally {
+    requestAbortContext.cleanup();
+  }
 }
 
 /**
  * GET 請求
  */
-export function get<T>(endpoint: string, token?: string): Promise<T> {
-  return fetchWrapper<T>(endpoint, { method: 'GET', token });
+export function get<T>(
+  endpoint: string,
+  token?: string,
+  controlOptions: RequestControlOptions = {}
+): Promise<T> {
+  return fetchWrapper<T>(endpoint, {
+    ...controlOptions,
+    method: 'GET',
+    token,
+  });
 }
 
 /**
@@ -96,9 +189,11 @@ export function get<T>(endpoint: string, token?: string): Promise<T> {
 export function post<T>(
   endpoint: string,
   data?: unknown,
-  token?: string
+  token?: string,
+  controlOptions: RequestControlOptions = {}
 ): Promise<T> {
   return fetchWrapper<T>(endpoint, {
+    ...controlOptions,
     method: 'POST',
     body: data ? JSON.stringify(data) : undefined,
     token,
@@ -111,9 +206,11 @@ export function post<T>(
 export function put<T>(
   endpoint: string,
   data: unknown,
-  token?: string
+  token?: string,
+  controlOptions: RequestControlOptions = {}
 ): Promise<T> {
   return fetchWrapper<T>(endpoint, {
+    ...controlOptions,
     method: 'PUT',
     body: JSON.stringify(data),
     token,
@@ -123,6 +220,14 @@ export function put<T>(
 /**
  * DELETE 請求
  */
-export function del<T>(endpoint: string, token?: string): Promise<T> {
-  return fetchWrapper<T>(endpoint, { method: 'DELETE', token });
+export function del<T>(
+  endpoint: string,
+  token?: string,
+  controlOptions: RequestControlOptions = {}
+): Promise<T> {
+  return fetchWrapper<T>(endpoint, {
+    ...controlOptions,
+    method: 'DELETE',
+    token,
+  });
 }

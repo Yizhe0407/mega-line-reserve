@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, Loader2, Tag, FileText, Clock, DollarSign } from "lucide-react";
+import { Trash2, Tag, FileText, Clock, DollarSign } from "lucide-react";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import type { Service } from "@/types";
 import { cn } from "@/lib/utils";

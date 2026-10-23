@@ -1,5 +1,5 @@
 import { prisma } from "../config/database";
-import { Service } from "../types/service";
+import { CreateServiceDTO, UpdateServiceDTO } from "../types/service";
 
 export const getAllServices = () => {
     return prisma.service.findMany();
@@ -20,13 +20,13 @@ export const getActiveServicesByIds = (ids: number[]) => {
     });
 };
 
-export const createService = (serviceData: Service) => {
+export const createService = (serviceData: CreateServiceDTO) => {
     return prisma.service.create({
         data: serviceData,
     });
 };
 
-export const updateService = (id: number, data: Partial<Service>) => {
+export const updateService = (id: number, data: UpdateServiceDTO) => {
     return prisma.service.update({
         where: { id },
         data,

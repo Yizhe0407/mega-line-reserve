@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 
-export function useDeleteConfirmDialog<T = any>() {
+export function useDeleteConfirmDialog<T = unknown>() {
   const [isOpen, setIsOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);

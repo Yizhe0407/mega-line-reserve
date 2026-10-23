@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Plus, Wrench, ArrowLeft } from "lucide-react";
+import { Plus, Wrench } from "lucide-react";
 import { ServiceCard } from "@/components/admin/services/ServiceCard";
 import Link from "next/link";
 

@@ -1,17 +1,18 @@
 services:
-  # MySQL Database
+  # MySQL 資料庫
   mysql:
-    image: mysql:8.0
+    # 固定 patch 版本與多架構 manifest digest，避免浮動 tag 靜默更新。
+    image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
     container_name: mega-line-reserve-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      # 僅綁定 localhost，避免資料庫直接暴露在公網
-      - "127.0.0.1:3306:3306"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Production 必須設定 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Production 必須設定 MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Production 必須設定 MYSQL_PASSWORD}
+    # Production 不發布資料庫 host port；維護請使用 maintenance/debug profile 或 docker exec。
+    expose:
+      - "3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -22,18 +23,19 @@ services:
       timeout: 5s
       retries: 5
 
-  # phpMyAdmin
+  # phpMyAdmin 管理介面
   phpmyadmin:
-    image: phpmyadmin:latest
+    # 固定 Apache variant 與多架構 manifest digest，不使用 latest。
+    image: phpmyadmin:5.2.3-apache@sha256:6db6e0bc9959eb00395f5d927cc786cb63530a265663950ecb9faf5955419c37
+    profiles: ["debug"]
     container_name: mega-line-reserve-phpmyadmin
-    restart: unless-stopped
+    # 僅供臨時維護，不應隨 production stack 預設常駐或自動重啟。
+    restart: "no"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      # 僅綁定 localhost，避免管理介面暴露在公網（需透過 SSH tunnel 存取）
+      # 僅綁定 localhost，需透過 SSH tunnel 存取。
       - "127.0.0.1:8080:80"
     depends_on:
       mysql:
@@ -41,94 +43,228 @@ services:
     networks:
       - mega-network
 
-  # Backend (Express on Node.js)
+  # Express API；不發布主機 port，只接受 Docker 內網的前端代理流量。
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: mega-line-reserve-backend
     restart: unless-stopped
+    init: true
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      DATABASE_URL: mysql://${MYSQL_USER:?Production 必須設定 MYSQL_USER}:${MYSQL_PASSWORD:?Production 必須設定 MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
       NODE_ENV: production
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN}
-      LINE_CHANNEL_ID: ${LINE_CHANNEL_ID}
-      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
-    ports:
-      - "3001:3001"
+      CORS_ORIGIN: ${CORS_ORIGIN:?Production 必須明確設定 CORS_ORIGIN}
+      # Next rewrite 會保留用戶端 X-Forwarded-For，因此預設必須關閉信任。
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      LINE_CHANNEL_ID: ${LINE_CHANNEL_ID:?Production 必須設定 LINE_CHANNEL_ID}
+      TZ: ${TZ:-Asia/Taipei}
+    expose:
+      - "3001"
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - mega-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health',{signal:AbortSignal.timeout(3000)}).then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-  # Auto-complete cron (every 5 minutes)
+  # 每五分鐘自動完成已過期預約。
   auto-complete:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: mega-line-reserve-auto-complete
     restart: unless-stopped
+    init: true
     working_dir: /app
-    command: sh -c "while true; do pnpm run cron:complete; sleep 300; done"
+    command: ["sh", "-c", "while true; do node dist/scripts/auto-complete.js; sleep 300; done"]
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      DATABASE_URL: mysql://${MYSQL_USER:?Production 必須設定 MYSQL_USER}:${MYSQL_PASSWORD:?Production 必須設定 MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
       NODE_ENV: production
+      TZ: ${TZ:-Asia/Taipei}
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - mega-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-  # Frontend (Next.js)
+  # Prisma migration 維護工具；正式 API 映像不包含開發依賴。
+  migrate:
+    profiles: ["maintenance"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: tools
+    init: true
+    command: ["pnpm", "exec", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:?Production 必須設定 MYSQL_USER}:${MYSQL_PASSWORD:?Production 必須設定 MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
+      NODE_ENV: production
+      TZ: ${TZ:-Asia/Taipei}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - mega-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Prisma seed 維護工具，僅在明確啟用 maintenance profile 時執行。
+  seed:
+    profiles: ["maintenance"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: tools
+    init: true
+    command: ["pnpm", "exec", "prisma", "db", "seed"]
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:?Production 必須設定 MYSQL_USER}:${MYSQL_PASSWORD:?Production 必須設定 MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
+      NODE_ENV: production
+      TZ: ${TZ:-Asia/Taipei}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - mega-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Next.js 前端；瀏覽器 API origin 必須等於公開前端 origin。
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://mega.yizhe.dev}
-        NEXT_PUBLIC_LIFF_ID: ${NEXT_PUBLIC_LIFF_ID}
+        # 瀏覽器固定使用同源 /api，避免將任何公開 Backend origin bake 進 bundle。
+        NEXT_PUBLIC_API_URL: ""
+        NEXT_PUBLIC_LIFF_ID: ${NEXT_PUBLIC_LIFF_ID:?Production 必須設定 NEXT_PUBLIC_LIFF_ID}
+        # Next rewrite 的建置期與執行期都只指向 Docker 內網 Backend。
+        INTERNAL_API_URL: http://backend:3001
     container_name: mega-line-reserve-frontend
     restart: unless-stopped
+    init: true
     environment:
       NODE_ENV: production
-      # /api/* 伺服器端轉發目標（容器內網位址，避免轉發回公開網域造成迴圈）
       INTERNAL_API_URL: http://backend:3001
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - mega-network
+    # 現有 standalone 路由皆為靜態頁面，且同源 API rewrite 已實測不需 runtime cache 寫入。
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-  # MySQL Backup to Google Drive
+  # MySQL 加密備份；資料庫密碼由 Docker secret 注入，不使用 root 帳號。
   backup:
     build:
       context: ./backup
       dockerfile: Dockerfile
     container_name: mega-line-reserve-backup
     restart: unless-stopped
+    init: true
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_USER: root
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${BACKUP_MYSQL_USER:?Production 必須設定專用 BACKUP_MYSQL_USER}
+      MYSQL_PASSWORD_FILE: /run/secrets/backup_mysql_password
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Production 必須設定 MYSQL_DATABASE}
       BACKUP_DIR: /backup
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
-      ENABLE_GDRIVE_UPLOAD: ${ENABLE_GDRIVE_UPLOAD:-false}
-      GDRIVE_BACKUP_PATH: ${GDRIVE_BACKUP_PATH:-mysql-backups}
+      BACKUP_SCHEDULE_TIME: ${BACKUP_SCHEDULE_TIME:-02:00}
+      ENABLE_RCLONE_UPLOAD: ${ENABLE_RCLONE_UPLOAD:-false}
+      RCLONE_CRYPT_REMOTE: ${RCLONE_CRYPT_REMOTE:-}
+      RCLONE_CONFIG: /config/rclone/rclone.conf
       RUN_ON_STARTUP: ${RUN_ON_STARTUP:-false}
       TZ: ${TZ:-Asia/Taipei}
+      HOME: /home/backup
+      XDG_CACHE_HOME: /tmp/.cache
+    secrets:
+      - backup_mysql_password
     volumes:
       - backup_data:/backup
-      - rclone_config:/root/.config/rclone
+      # OAuth provider 可能需要更新 token，因此維持可寫；啟動時會驗證 UID 與 0700/0600 權限。
+      - rclone_config:/config/rclone
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - mega-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # 只用於初始化／檢查 rclone 設定，不掛載資料庫密碼或備份資料。
+  rclone-config:
+    profiles: ["backup-config"]
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    init: true
+    entrypoint: ["/entrypoint.sh", "rclone"]
+    command: ["config"]
+    environment:
+      RCLONE_CONFIG: /config/rclone/rclone.conf
+      HOME: /home/backup
+      XDG_CACHE_HOME: /tmp/.cache
+      TZ: ${TZ:-Asia/Taipei}
+    volumes:
+      - rclone_config:/config/rclone
+    networks:
+      - mega-network
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 volumes:
   mysql_data:
@@ -141,3 +277,7 @@ volumes:
 networks:
   mega-network:
     driver: bridge
+
+secrets:
+  backup_mysql_password:
+    file: ${BACKUP_MYSQL_PASSWORD_FILE:?請設定專用備份資料庫密碼檔路徑}

@@ -1,6 +1,7 @@
 import { Prisma, ReserveStatus } from "@prisma/client";
 import { prisma } from "../config/database";
 import { CreateReserveDTO, UpdateReserveDTO } from "../types/reserve";
+import { dateOnlyToUtcDate } from "../utils/dateOnly";
 
 // 可傳入 prisma 或 transaction client，讓呼叫端可在交易中執行以避免競態
 type DbClient = Prisma.TransactionClient;
@@ -61,8 +62,8 @@ export const getReservesByUserId = (userId: number) => {
 };
 
 // 取得單一代辦
-export const getReserveById = (id: number) => {
-    return prisma.reserve.findUnique({
+export const getReserveById = (id: number, db: DbClient = prisma) => {
+    return db.reserve.findUnique({
         where: { id },
         include: {
             user: true,
@@ -76,6 +77,44 @@ export const getReserveById = (id: number) => {
     });
 };
 
+// 更新交易只讀取判斷權限、時段及容量所需欄位，避免載入不必要關聯
+export const getReserveStateById = (id: number, db: DbClient = prisma) => {
+    return db.reserve.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            userId: true,
+            timeSlotId: true,
+            date: true,
+            status: true,
+        }
+    });
+};
+
+// 預約建立／更新需在同一交易內讀取目前時段設定
+export const getTimeSlotForReservation = (id: number, db: DbClient = prisma) => {
+    return db.timeSlot.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            capacity: true,
+            isActive: true,
+        }
+    });
+};
+
+// 服務啟用狀態需與預約寫入共用 transaction client，避免驗證與寫入之間產生競態
+export const countActiveServicesByIds = (ids: number[], db: DbClient = prisma) => {
+    return db.service.count({
+        where: {
+            id: { in: ids },
+            isActive: true,
+        }
+    });
+};
+
 // 建立預約
 export const createReserve = (userId: number, data: CreateReserveDTO, db: DbClient = prisma) => {
     const { timeSlotId, license, serviceIds, userMemo, date, isPickup } = data;
@@ -84,7 +123,7 @@ export const createReserve = (userId: number, data: CreateReserveDTO, db: DbClie
         data: {
             userId,
             timeSlotId,
-            date: new Date(date),
+            date: dateOnlyToUtcDate(date),
             license,
             isPickup: isPickup || false,
             userMemo,
@@ -123,7 +162,7 @@ export const updateReserve = (id: number, data: UpdateReserveDTO, db: DbClient =
     };
 
     if (date) {
-        updateData.date = new Date(date);
+        updateData.date = dateOnlyToUtcDate(date);
     }
 
     if (isPickup !== undefined) {
@@ -163,15 +202,22 @@ export const deleteReserve = (id: number) => {
     });
 };
 
-export const countActiveReservesByTimeSlotAndDate = (timeSlotId: number, date: string, db: DbClient = prisma) => {
-    const targetDate = new Date(date);
+export const countActiveReservesByTimeSlotAndDate = (
+    timeSlotId: number,
+    date: string,
+    db: DbClient = prisma,
+    excludeReserveId?: number,
+) => {
     return db.reserve.count({
         where: {
             timeSlotId,
-            date: targetDate,
+            date: dateOnlyToUtcDate(date),
             status: {
                 not: ReserveStatus.CANCELLED
-            }
+            },
+            ...(excludeReserveId !== undefined && {
+                id: { not: excludeReserveId }
+            })
         }
     });
 };

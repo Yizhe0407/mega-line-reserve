@@ -39,34 +39,22 @@ interface UpdateReservationMessageData {
 }
 
 export default function EditReservationDialog({ isOpen, onClose, reserve, onUpdate }: EditReservationDialogProps) {
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [timeSlotId, setTimeSlotId] = useState<number | null>(null);
-  const [selectedServices, setSelectedServices] = useState<number[]>([]);
-  const [isPickup, setIsPickup] = useState(false);
-  const [license, setLicense] = useState("");
+  const [date, setDate] = useState<Date | undefined>(() => (
+    reserve.date ? new Date(reserve.date) : undefined
+  ));
+  const [timeSlotId, setTimeSlotId] = useState<number | null>(reserve.timeSlotId);
+  const [selectedServices, setSelectedServices] = useState<number[]>(() => (
+    (reserve as ReserveWithServices).services?.map((item) => item.service.id) ?? []
+  ));
+  const [isPickup, setIsPickup] = useState(Boolean(reserve.isPickup));
+  const [license, setLicense] = useState(reserve.license ?? "");
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const services = useStepStore((state) => state.services);
 
-  // Initialize input fields with reservation data
-  useEffect(() => {
-    if (reserve && isOpen) {
-      if (reserve.date) {
-        setDate(new Date(reserve.date));
-      }
-
-      setTimeSlotId(reserve.timeSlotId);
-      setIsPickup(reserve.isPickup || false);
-      setLicense(reserve.license || "");
-
-      const serviceIds = (reserve as ReserveWithServices).services?.map((s) => s.service.id) || [];
-      setSelectedServices(serviceIds);
-    }
-  }, [reserve, isOpen]);
-
-  // Fetch time slots
+  // 開啟對話框時載入可用時段。
   useEffect(() => {
     const fetchTimeSlots = async () => {
       setIsLoadingSlots(true);

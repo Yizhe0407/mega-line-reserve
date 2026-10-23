@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
-  # MySQL Database
+  # MySQL 開發資料庫；固定 patch 版本與多架構 manifest digest。
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.46@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
     container_name: mega-line-reserve-mysql
     restart: unless-stopped
     environment:
@@ -23,16 +21,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # phpMyAdmin
+  # phpMyAdmin 僅在明確啟用 debug profile 時啟動，且不預填 root 密碼。
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2.3-apache@sha256:6db6e0bc9959eb00395f5d927cc786cb63530a265663950ecb9faf5955419c37
+    profiles: ["debug"]
     container_name: mega-line-reserve-phpmyadmin
-    restart: unless-stopped
+    restart: "no"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
@@ -41,76 +38,120 @@ services:
     networks:
       - mega-network
 
-  # Backend (Express with Node.js) - Development with Hot Reload
+  # Express 開發伺服器；Node 與 pnpm 由 Backend Dockerfile 的固定版本 base target 提供。
   backend:
-    image: node:20-alpine
+    image: mega-line-reserve-backend-dev:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: base
     container_name: mega-line-reserve-backend-dev
     restart: unless-stopped
+    init: true
     working_dir: /app
-    command: sh -c "npm install -g pnpm && pnpm install && pnpm prisma generate && pnpm prisma migrate deploy && pnpm prisma db seed && pnpm run dev"
+    command:
+      [
+        "sh",
+        "-c",
+        "pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm exec prisma migrate deploy && pnpm exec prisma db seed && exec pnpm run dev",
+      ]
     environment:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       NODE_ENV: development
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       LINE_CHANNEL_ID: ${LINE_CHANNEL_ID}
-      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
+      TZ: ${TZ:-Asia/Taipei}
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     volumes:
       - ./backend:/app
-      - /app/node_modules
+      - backend_node_modules:/app/node_modules
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - mega-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health',{signal:AbortSignal.timeout(3000)}).then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
-  # Auto-complete cron (every 5 minutes)
+  # 每五分鐘執行一次自動完成；共用 Backend 已安裝完成的 node_modules。
   auto-complete:
-    image: node:20-alpine
+    image: mega-line-reserve-backend-dev:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: base
     container_name: mega-line-reserve-auto-complete-dev
     restart: unless-stopped
+    init: true
     working_dir: /app
-    command: sh -c "npm install -g pnpm && pnpm install && pnpm prisma generate && while true; do pnpm run cron:complete:dev; sleep 300; done"
+    command: ["sh", "-c", "while true; do pnpm run cron:complete:dev; sleep 300; done"]
     environment:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       NODE_ENV: development
+      TZ: ${TZ:-Asia/Taipei}
     volumes:
       - ./backend:/app
-      - /app/node_modules
+      - backend_node_modules:/app/node_modules
     depends_on:
       mysql:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mega-network
 
-  # Frontend (Next.js) - Development with Hot Reload
+  # Next.js 開發伺服器；使用 pnpm lockfile，瀏覽器固定走同源 /api。
   frontend:
-    image: node:20-alpine
+    image: mega-line-reserve-frontend-dev:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: package-manager
     container_name: mega-line-reserve-frontend-dev
     restart: unless-stopped
+    init: true
     working_dir: /app
-    command: sh -c "npm install && npm run dev"
+    command: ["sh", "-c", "pnpm install --frozen-lockfile && exec pnpm run dev"]
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://mega.yizhe.dev}
+      NEXT_PUBLIC_API_URL: ""
+      INTERNAL_API_URL: http://backend:3001
+      NEXT_PUBLIC_LIFF_ID: ${NEXT_PUBLIC_LIFF_ID}
+      NEXT_PUBLIC_LIFF_BYPASS: ${NEXT_PUBLIC_LIFF_BYPASS:-false}
       WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - frontend_node_modules:/app/node_modules
+      - frontend_next:/app/.next
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - mega-network
 
 volumes:
   mysql_data:
+    driver: local
+  backend_node_modules:
+    driver: local
+  frontend_node_modules:
+    driver: local
+  frontend_next:
     driver: local
 
 networks:

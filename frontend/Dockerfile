@@ -1,58 +1,62 @@
-FROM node:20-alpine AS base
+# syntax=docker/dockerfile:1.7
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+ARG NODE_IMAGE=node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
+
+FROM ${NODE_IMAGE} AS base
+
+RUN corepack enable
+
+# 安裝 package.json 指定的套件管理器版本
+FROM base AS package-manager
 WORKDIR /app
+COPY package.json ./
+RUN corepack install \
+  && EXPECTED_PNPM_VERSION="$(node -p "require('./package.json').packageManager.match(/^pnpm@([^+]+)/)[1]")" \
+  && ACTUAL_PNPM_VERSION="$(pnpm --version)" \
+  && test "$ACTUAL_PNPM_VERSION" = "$EXPECTED_PNPM_VERSION"
 
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# 僅安裝建置所需依賴
+FROM package-manager AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
+# 建置前端程式碼
+FROM package-manager AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build-time arguments for Next.js public environment variables
+# Next.js 建置階段環境變數
+ARG INTERNAL_API_URL=http://backend:3001
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_LIFF_ID
 ARG NEXT_PUBLIC_LIFF_BYPASS=false
+ENV INTERNAL_API_URL=${INTERNAL_API_URL}
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_LIFF_ID=$NEXT_PUBLIC_LIFF_ID
 ENV NEXT_PUBLIC_LIFF_BYPASS=$NEXT_PUBLIC_LIFF_BYPASS
 
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+RUN pnpm run build
 
-# Production image, copy all the files and run next
+# 正式執行映像
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 --ingroup nodejs nextjs
 
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# 預先建立 Next.js runtime cache 目錄；目前靜態路由在唯讀 rootfs 下不需寫入。
+# 未來若加入 ISR、圖片最佳化或 runtime cache，應重新實測並只掛載必要路徑。
+RUN mkdir -p .next/cache \
+  && chown -R nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
+# 使用 standalone 輸出縮小正式映像
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

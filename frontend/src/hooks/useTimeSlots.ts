@@ -11,6 +11,8 @@ import {
 import { AUTH_TOKEN_ERROR_MESSAGE } from "@/constants/errors";
 import type { TimeSlot } from "@/types";
 
+const EMPTY_TIME_SLOTS: TimeSlot[] = [];
+
 export function useTimeSlots(enabled = true) {
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export function useTimeSlots(enabled = true) {
     }
   );
 
-  const timeSlots = data ?? [];
+  const timeSlots = data ?? EMPTY_TIME_SLOTS;
 
   // 按星期分組時段
   const groupedSlots = useMemo(() => {

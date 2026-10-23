@@ -220,6 +220,11 @@ export default function RecordPage() {
     setIsEditDialogOpen(true);
   }, []);
 
+  const handleCloseEditDialog = useCallback(() => {
+    setIsEditDialogOpen(false);
+    setEditingReserve(null);
+  }, []);
+
   const handleUpdateReservation = useCallback(async (
     id: number,
     data: UpdateReserveDTO,
@@ -488,7 +493,7 @@ export default function RecordPage() {
       {editingReserve && (
         <EditReservationDialog 
             isOpen={isEditDialogOpen}
-            onClose={() => setIsEditDialogOpen(false)}
+            onClose={handleCloseEditDialog}
             reserve={editingReserve}
             onUpdate={handleUpdateReservation}
         />

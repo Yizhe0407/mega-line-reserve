@@ -43,7 +43,7 @@ export default function StepButtonGroup({
         });
         router.push("/final");
         setTimeout(() => reset(), 500);
-      } catch (error) {
+      } catch {
         setIsSubmitting(false);
       }
     } else {

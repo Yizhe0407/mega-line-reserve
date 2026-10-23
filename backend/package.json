@@ -18,27 +18,26 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.34.5+sha512.a4ee05f2f73658255bd6a89859c065a45c28a57daefae2c893a168ee2b73168c37b91e83e57ea67654ad03f03031746430e8bce38e362e042605fb8abc80192e",
   "devDependencies": {
-    "@types/compression": "^1.7.6",
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.0.9",
-    "@types/nodemailer": "^7.0.5",
-    "nodemon": "^3.1.11",
-    "prisma": "^6.11.0",
+    "@types/node": "^25.9.5",
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@prisma/client": "^6.11.0",
-    "axios": "^1.18.0",
+    "@prisma/client": "^6.19.3",
+    "axios": "^1.19.0",
     "compression": "^1.8.1",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "express-rate-limit": "^8.5.2",
-    "helmet": "^8.2.0",
-    "nodemailer": "^7.0.12"
+    "express-rate-limit": "^8.6.2",
+    "helmet": "^8.3.0",
+    "zod": "^4.4.3"
   }
 }

@@ -1,7 +1,8 @@
 import * as serviceModel from "../model/service";
-import { Service } from "../types/service";
+import { CreateServiceDTO, Service, UpdateServiceDTO } from "../types/service";
 import { NotFoundError, ValidationError } from "../types/errors";
 import { clearCache, getCache, setCache } from "../utils/cache";
+import { parsePositiveIntParam } from "../utils/params";
 
 const SERVICES_CACHE_KEY = "services:all";
 
@@ -14,10 +15,7 @@ export const getAllServices = async () => {
 };
 
 export const getServiceById = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的服務 ID");
-    }
+    const id = parsePositiveIntParam(idParam, "服務");
 
     const service = await serviceModel.getServiceById(id);
     if (!service) {
@@ -26,7 +24,7 @@ export const getServiceById = async (idParam: string | string[]) => {
     return service;
 };
 
-export const createService = async (serviceData: Service) => {
+export const createService = async (serviceData: CreateServiceDTO) => {
     // 檢查必要欄位
     if (!serviceData.name?.trim()) {
         throw new ValidationError("服務名稱不能為空");
@@ -43,11 +41,8 @@ export const createService = async (serviceData: Service) => {
     return created;
 };
 
-export const updateService = async (idParam: string | string[], data: Partial<Service>) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的服務 ID");
-    }
+export const updateService = async (idParam: string | string[], data: UpdateServiceDTO) => {
+    const id = parsePositiveIntParam(idParam, "服務");
 
     // 檢查服務是否存在
     const existingService = await serviceModel.getServiceById(id);
@@ -72,10 +67,7 @@ export const updateService = async (idParam: string | string[], data: Partial<Se
 };
 
 export const deleteService = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的服務 ID");
-    }
+    const id = parsePositiveIntParam(idParam, "服務");
 
     // 檢查服務是否存在
     const existingService = await serviceModel.getServiceById(id);

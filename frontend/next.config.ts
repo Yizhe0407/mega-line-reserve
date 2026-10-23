@@ -1,32 +1,43 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-  output: 'standalone',
-  reactCompiler: true,
+const internalApiUrl = (
+  process.env.INTERNAL_API_URL?.trim() || "http://127.0.0.1:3001"
+).replace(/\/+$/, "");
 
-  // CORS 設定
+const nextConfig: NextConfig = {
+  output: "standalone",
+  reactCompiler: true,
+  poweredByHeader: false,
+
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: "/:path*",
         headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' }, // 可改為特定網域
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
         ],
       },
     ];
   },
 
-  // 將 /api/* 代理到後端容器（伺服器端轉發，須走內網位址，
-  // 避免轉發回 NEXT_PUBLIC_API_URL 公開網域造成迴圈）
+  // Node 24 會優先解析 module-sync；將 SWC 的 ESM helper 納入 standalone 產物。
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers/esm/**/*",
+    ],
+  },
+
+  // 同源 /api 由 Next.js 伺服器轉發；INTERNAL_API_URL 不會輸出到瀏覽器。
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${process.env.INTERNAL_API_URL || 'http://backend:3001'}/api/:path*`,
+        source: "/api/:path*",
+        destination: `${internalApiUrl}/api/:path*`,
       },
     ];
   },

@@ -2,6 +2,8 @@ import express from "express";
 import { UserRole } from "@prisma/client";
 import * as timeSlotControllers from "../controllers/timeSlot";
 import { authenticate, checkRole } from "../middleware/auth";
+import { validateBody } from "../middleware/validate";
+import { createTimeSlotBodySchema, updateTimeSlotBodySchema } from "../validation/timeSlot";
 
 export const router = express.Router();
 
@@ -15,7 +17,7 @@ router.get("/available", timeSlotControllers.getAvailableTimeSlots);
 router.use(authenticate);
 
 router.get("/", checkRole(UserRole.ADMIN), timeSlotControllers.getAllTimeSlots);
-router.post("/", checkRole(UserRole.ADMIN), timeSlotControllers.createTimeSlot);
+router.post("/", checkRole(UserRole.ADMIN), validateBody(createTimeSlotBodySchema), timeSlotControllers.createTimeSlot);
 router.get("/:id", checkRole(UserRole.ADMIN), timeSlotControllers.getTimeSlotById);
-router.put("/:id", checkRole(UserRole.ADMIN), timeSlotControllers.updateTimeSlot);
+router.put("/:id", checkRole(UserRole.ADMIN), validateBody(updateTimeSlotBodySchema), timeSlotControllers.updateTimeSlot);
 router.delete("/:id", checkRole(UserRole.ADMIN), timeSlotControllers.deleteTimeSlot);

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStepStore } from "@/store/step-store";
 import {
@@ -42,34 +42,18 @@ function ProfilePageContent() {
   const searchParams = useSearchParams();
   const isNewUser = searchParams.get("new") === "true";
 
-  const [isEditing, setIsEditing] = useState(isNewUser);
+  const [isEditingExistingUser, setIsEditingExistingUser] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { userId, lineId } = useStepStore();
+  const isLoading = useStepStore((state) => state.isLoading);
   const setUserId = useStepStore((state) => state.setUserId);
   const setIsNewUser = useStepStore((state) => state.setIsNewUser);
   const step1Data = useStepStore((state) => state.step1Data);
   const setStep1Data = useStepStore((state) => state.setStep1Data);
-  const [localData, setLocalData] = useState<ProfileFormData>(step1Data);
+  const [draftData, setDraftData] = useState<ProfileFormData | null>(null);
   const [errors, setErrors] = useState<ProfileErrors>({});
-
-  useEffect(() => {
-    if (!isEditing) {
-      setIsLoading(true);
-      setLocalData(step1Data);
-      setIsLoading(false);
-    }
-  }, [step1Data, isEditing]);
-  
-  useEffect(() => {
-    if (isNewUser) {
-      setIsEditing(true);
-      setLocalData({ 
-        ...step1Data, 
-        pictureUrl: step1Data.pictureUrl 
-      });
-    }
-  }, [isNewUser, step1Data]);
+  const isEditing = isNewUser || isEditingExistingUser;
+  const localData = draftData ?? step1Data;
 
   const validate = () => {
     const newErrors: ProfileErrors = {};
@@ -80,12 +64,13 @@ function ProfilePageContent() {
   };
 
   const handleEdit = () => {
-    setLocalData(step1Data);
-    setIsEditing(true);
+    setDraftData(step1Data);
+    setIsEditingExistingUser(true);
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
+    setDraftData(null);
+    setIsEditingExistingUser(false);
     setErrors({});
     if (isNewUser) {
       router.push("/profile?new=true");
@@ -149,7 +134,8 @@ function ProfilePageContent() {
         pictureUrl: updatedProfile.pictureUrl,
       });
       setIsNewUser(false);
-      setIsEditing(false);
+      setDraftData(null);
+      setIsEditingExistingUser(false);
       setErrors({});
       router.push("/profile");
     } catch (error) {
@@ -222,7 +208,7 @@ function ProfilePageContent() {
                     name="phone"
                     autoComplete="tel"
                     value={localData?.phone || ""}
-                    onChange={(e) => setLocalData({ ...localData, phone: e.target.value })}
+                    onChange={(e) => setDraftData({ ...localData, phone: e.target.value })}
                     className={`h-12 ${errors.phone ? 'ring-2 ring-destructive' : ''}`}
                     disabled={isSaving}
                   />
@@ -244,7 +230,7 @@ function ProfilePageContent() {
                     name="license"
                     autoComplete="off"
                     value={localData?.license || ""}
-                    onChange={(e) => setLocalData({ ...localData, license: e.target.value.toUpperCase() })}
+                    onChange={(e) => setDraftData({ ...localData, license: e.target.value.toUpperCase() })}
                     className={`h-12 ${errors.license ? 'ring-2 ring-destructive' : ''}`}
                     disabled={isSaving}
                     placeholder="例如：ABC-1234 或 1234-AA"

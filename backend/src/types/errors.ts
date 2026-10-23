@@ -27,6 +27,13 @@ export class AuthenticationError extends Error {
     }
 }
 
+export class ServiceUnavailableError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ServiceUnavailableError';
+    }
+}
+
 export class NotFoundError extends Error {
     constructor(message: string) {
         super(message);

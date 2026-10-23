@@ -2,6 +2,8 @@ import * as timeSlotModel from "../model/timeSlot";
 import { CreateTimeSlotDTO, UpdateTimeSlotDTO, TimeSlot } from "../types/timeSlot";
 import { NotFoundError, ValidationError } from "../types/errors";
 import { clearCache, getCache, setCache } from "../utils/cache";
+import { parsePositiveIntParam } from "../utils/params";
+import { dateOnlyToUtcDate, parseDateOnly } from "../utils/dateOnly";
 
 const TIME_SLOTS_ALL_CACHE_KEY = "time-slots:all";
 const TIME_SLOTS_ACTIVE_CACHE_KEY = "time-slots:active";
@@ -34,24 +36,21 @@ export const getActiveTimeSlots = async () => {
 };
 
 export const getAvailableTimeSlots = async (dateStr: string) => {
-    if (!dateStr || isNaN(Date.parse(dateStr))) {
+    const dateParts = parseDateOnly(dateStr);
+    if (!dateParts) {
         throw new ValidationError("無效的日期格式 (YYYY-MM-DD)");
     }
 
-    const date = new Date(dateStr);
-    const dayOfWeek = date.getDay(); // 0-6
+    // MySQL @db.Date 使用 UTC 午夜表示，星期也以日期本身的 UTC 欄位計算。
+    const date = dateOnlyToUtcDate(dateStr);
 
     // 直接查詢該日期與星期幾的時段與預約狀況
     // 這裡不使用快取，因為預約狀況會隨時變動
-    const slots = await timeSlotModel.getTimeSlotsWithReserveCount(dayOfWeek, date);
-    return slots;
+    return timeSlotModel.getTimeSlotsWithReserveCount(dateParts.dayOfWeek, date);
 };
 
 export const getTimeSlotById = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的時段 ID");
-    }
+    const id = parsePositiveIntParam(idParam, "時段");
 
     const timeSlot = await timeSlotModel.getTimeSlotById(id);
     if (!timeSlot) {
@@ -98,10 +97,7 @@ export const createTimeSlot = async (data: CreateTimeSlotDTO) => {
 };
 
 export const updateTimeSlot = async (idParam: string | string[], data: UpdateTimeSlotDTO) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的時段 ID");
-    }
+    const id = parsePositiveIntParam(idParam, "時段");
 
     const existing = await timeSlotModel.getTimeSlotById(id);
     if (!existing) {
@@ -137,10 +133,7 @@ export const updateTimeSlot = async (idParam: string | string[], data: UpdateTim
 };
 
 export const deleteTimeSlot = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    if (isNaN(id)) {
-        throw new ValidationError("無效的時段 ID");
-    }
+    const id = parsePositiveIntParam(idParam, "時段");
 
     const existing = await timeSlotModel.getTimeSlotById(id);
     if (!existing) {

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Calendar, Wrench, Settings, ArrowRight, ShieldCheck } from "lucide-react";
+import { Calendar, Wrench, ArrowRight } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import Link from "next/link";
 

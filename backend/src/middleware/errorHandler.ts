@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
-import { NotFoundError, ValidationError, AuthenticationError, NewUserError } from '../types/errors';
+import {
+  NotFoundError,
+  ValidationError,
+  AuthenticationError,
+  NewUserError,
+  ServiceUnavailableError,
+} from '../types/errors';
 
 export const errorHandler = (
   err: Error,
@@ -9,6 +15,15 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   console.error(`[Error] ${err.name}: ${err.message}`);
+
+  const bodyParserError = err as Error & { type?: string; status?: number; statusCode?: number };
+  if (bodyParserError.type === 'entity.too.large' || bodyParserError.status === 413 || bodyParserError.statusCode === 413) {
+    return res.status(413).json({ error: '請求內容過大' });
+  }
+
+  if (bodyParserError.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'JSON 格式錯誤' });
+  }
 
   if (err instanceof NewUserError) {
     return res.status(400).json({
@@ -33,6 +48,10 @@ export const errorHandler = (
 
   if (err instanceof AuthenticationError) {
     return res.status(401).json({ error: err.message });
+  }
+
+  if (err instanceof ServiceUnavailableError) {
+    return res.status(503).json({ error: err.message });
   }
 
   if (err instanceof NotFoundError) {

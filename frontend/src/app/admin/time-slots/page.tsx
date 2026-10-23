@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WeeklyCalendarView } from "@/components/admin/time-slots/WeeklyCalendarView";
-import { ArrowLeft, Clock } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useTimeSlots } from "@/hooks/useTimeSlots";
 import { useTimeSlotDialog } from "@/hooks/useTimeSlotDialog";
 import { useCopySlotDialog } from "@/hooks/useCopySlotDialog";
 import { useDeleteConfirmDialog } from "@/hooks/useDeleteConfirmDialog";
+import type { TimeSlot } from "@/types";
 
 const TimeSlotDialog = dynamic(
   () => import("@/components/admin/time-slots/TimeSlotDialog").then((mod) => mod.TimeSlotDialog),
@@ -55,7 +55,7 @@ export default function TimeSlotAdminPage() {
 
   const timeSlotDialog = useTimeSlotDialog();
   const copyDialog = useCopySlotDialog();
-  const deleteDialog = useDeleteConfirmDialog();
+  const deleteDialog = useDeleteConfirmDialog<TimeSlot>();
 
   const isDataLoading = isAuthLoading || (isAdmin ? isSlotsLoading : false);
 
@@ -120,15 +120,14 @@ export default function TimeSlotAdminPage() {
   const handleCopySlots = async () => {
     if (copyDialog.targetDays.length === 0) {
       setSlotsError("請選擇至少一個目標日期");
-      console.log(slotsError); // Added to use slotsError
       return;
     }
     copyDialog.setIsLoading(true);
     try {
       await copySlots(copyDialog.sourceDay, copyDialog.targetDays);
       copyDialog.closeDialog();
-    } catch (err) {
-      // 錯誤已在 copySlots 中處理，這裡不需要額外設定 slotsError
+    } catch {
+      // 錯誤已在 copySlots 中處理，這裡不需要重複顯示
     } finally {
       copyDialog.setIsLoading(false);
     }

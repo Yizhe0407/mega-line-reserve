@@ -1,6 +1,7 @@
 import * as userModel from "../model/user";
-import { UserProfile, CreateUserDTO } from "../types/user";
+import { CreateUserDTO, UpdateUserDTO } from "../types/user";
 import { ValidationError, NotFoundError } from "../types/errors";
+import { parsePositiveIntParam } from "../utils/params";
 import { isValidLicense, normalizeLicense } from "../utils/validators";
 
 export const getUserByLineId = async (lineIdParam: string | string[]) => {
@@ -15,12 +16,7 @@ export const getUserByLineId = async (lineIdParam: string | string[]) => {
 };
 
 export const getUserById = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-    
-    // 業務邏輯檢查：驗證 ID 為有效數字
-    if (isNaN(id) || id <= 0) {
-        throw new ValidationError("使用者 ID 必須為正整數");
-    }
+    const id = parsePositiveIntParam(idParam, "使用者");
 
     const user = await userModel.findUserById(id);
     
@@ -68,19 +64,8 @@ export const createUser = async (userData: CreateUserDTO) => {
     return await userModel.createUser(userData);
 };
 
-// 使用者可自行更新的欄位白名單
-// 注意：role、lineId、id、createdAt、updatedAt 不可由使用者修改，避免權限提升
-const UPDATABLE_FIELDS = ['name', 'pictureUrl', 'phone', 'license'] as const;
-type UpdatableField = typeof UPDATABLE_FIELDS[number];
-type UpdatableUserData = Partial<Pick<UserProfile, UpdatableField>>;
-
-export const updateUser = async (idParam: string | string[], data: Partial<UserProfile>, currentUserId: number) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-
-    // 業務邏輯檢查：驗證 ID 為有效數字
-    if (isNaN(id) || id <= 0) {
-        throw new ValidationError("使用者 ID 必須為正整數");
-    }
+export const updateUser = async (idParam: string | string[], data: UpdateUserDTO, currentUserId: number) => {
+    const id = parsePositiveIntParam(idParam, "使用者");
 
     // 業務邏輯檢查：權限驗證 - 使用者只能更新自己的資料
     if (id !== currentUserId) {
@@ -93,13 +78,12 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
         throw new NotFoundError(`找不到 ID 為 ${id} 的使用者`);
     }
 
-    // 安全性：只允許白名單內的欄位被更新，避免使用者透過此 API 變更 role、lineId 等敏感欄位
-    const updateData: UpdatableUserData = {};
-    for (const field of UPDATABLE_FIELDS) {
-        if (data[field] !== undefined) {
-            updateData[field] = data[field] as any;
-        }
-    }
+    // 安全性：逐欄位複製白名單，避免 role、lineId 等敏感欄位進入資料層。
+    const updateData: UpdateUserDTO = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.pictureUrl !== undefined) updateData.pictureUrl = data.pictureUrl;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.license !== undefined) updateData.license = data.license;
 
     // 業務邏輯檢查：驗證更新資料不為空
     if (Object.keys(updateData).length === 0) {
@@ -127,12 +111,7 @@ export const updateUser = async (idParam: string | string[], data: Partial<UserP
 };
 
 export const deleteUser = async (idParam: string | string[]) => {
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam);
-
-    // 業務邏輯檢查：驗證 ID 為有效數字
-    if (isNaN(id) || id <= 0) {
-        throw new ValidationError("使用者 ID 必須為正整數");
-    }
+    const id = parsePositiveIntParam(idParam, "使用者");
 
     // 業務邏輯檢查：確認使用者存在
     const existingUser = await userModel.findUserById(id);
