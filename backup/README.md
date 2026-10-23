@@ -85,7 +85,14 @@ docker compose run --rm --no-deps --entrypoint bash backup -ceu '
 '
 ```
 
-預期容器使用 UID/GID `10001:10001`，secret 可讀且不得授予 group/other 權限。不同 Docker Compose／主機平台對 file-backed secret 的 ownership 投影可能不同；若原生 Linux 主機仍保留 host owner，請由受控部署流程將主機密碼檔設為 UID/GID `10001:10001`、mode `0600`，再重建容器並重跑上述檢查。不要為了排除權限錯誤改成 `0644`。
+預期容器使用 UID/GID `10001:10001`，secret 可讀且不得授予 group/other 權限。原生 Linux 主機上，file-backed secret 會保留主機檔案的 owner。密碼檔由一般使用者建立時 owner 是該使用者，UID `10001` 讀不到，備份會失敗。請將主機密碼檔改為 UID/GID `10001:10001`、mode `0600`，再重建容器並重跑上述檢查：
+
+```bash
+sudo chown 10001:10001 "${HOME}/.config/mega-line-reserve/backup_mysql_password"
+docker compose up -d --force-recreate backup
+```
+
+改 owner 之後一般使用者無法直接讀取該檔，輪替密碼時需使用 `sudo`。不要為了排除權限錯誤改成 `0644`。
 
 ## 3. 設定 rclone crypt
 
@@ -226,6 +233,14 @@ docker compose --profile backup-config run --rm rclone-config config show backup
 ```
 
 必須看到 `type = crypt`。
+
+### 備份失敗：`MYSQL_PASSWORD_FILE 無法讀取`
+
+容器內的 UID `10001` 讀不到主機上的密碼檔，通常是檔案 owner 仍為一般使用者。依第 2 節將密碼檔改為 `10001:10001`、mode `0600`，並重建 `backup` 容器。
+
+### 備份失敗：`mktemp ... /backup/... Permission denied`
+
+既有的 `backup_data` volume 仍由 root 或其他 UID 擁有。Docker 只在 volume 為空時才從映像複製權限，因此升級後不會自動修正。請依「從既有 root 容器升級」修正 `/backup`；既有備份檔會保留。
 
 ### 備份帳號權限不足
 
